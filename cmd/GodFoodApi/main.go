@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	_ "github.com/lib/pq"
 	"github.com/yourgfslove/GodFoodApi/internal/config"
 	"github.com/yourgfslove/GodFoodApi/internal/database"
+	"github.com/yourgfslove/GodFoodApi/internal/http-server/auth/login"
 	"github.com/yourgfslove/GodFoodApi/internal/http-server/auth/register"
 	mwLogger "github.com/yourgfslove/GodFoodApi/internal/http-server/middleware/logger"
 	"github.com/yourgfslove/GodFoodApi/internal/lib/logger/sl"
@@ -24,7 +26,7 @@ func main() {
 	log.Debug("Debug logging enabled")
 	storage, err := sql.Open("postgres", cfg.StorageURL)
 	if err != nil {
-		log.Error("failed init storage")
+		log.Error("failed init storage", err)
 		os.Exit(1)
 	}
 	DBQueries := database.New(storage)
@@ -34,7 +36,8 @@ func main() {
 	router.Use(mwLogger.New(log))
 	router.Use(middleware.Recoverer)
 	router.Use(middleware.URLFormat)
-	router.Post("/register", register.New(log, DBQueries))
+	router.Post("/register", register.New(log, DBQueries, DBQueries, cfg.SecretJWT))
+	router.Post("/login", login.New(log, DBQueries, DBQueries, cfg.SecretJWT))
 
 	srv := &http.Server{
 		Addr:         cfg.Address,

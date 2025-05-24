@@ -33,6 +33,15 @@ type Orderitem struct {
 	Quanity    int32
 }
 
+type Refreshtoken struct {
+	Token     string
+	CreatedAt sql.NullTime
+	UpdatedAt sql.NullTime
+	UserID    int32
+	ExpiresAt sql.NullTime
+	RevokedAt sql.NullTime
+}
+
 type User struct {
 	ID           int32
 	Email        string

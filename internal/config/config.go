@@ -10,6 +10,7 @@ import (
 type Config struct {
 	Env        string `yaml:"env" env:"ENV" env-default:"local"`
 	StorageURL string `yaml:"storage_url" env:"STORAGE_URL" env-required:"true"`
+	SecretJWT  string `yaml:"secret_jwt" env:"SECRET_JWT"`
 	HTTPServer `yaml:"http_server" env:"HTTP_SERVER" env-required:"true"`
 }
 type HTTPServer struct {
@@ -27,8 +28,9 @@ func MustLoadConfig() *Config {
 	if err != nil {
 		log.Fatalf("%s does not exist: %v", configPath, err)
 	}
-	if err = cleanenv.ReadConfig(configPath, &Config{}); err != nil {
+	var config Config
+	if err = cleanenv.ReadConfig(configPath, &config); err != nil {
 		log.Fatalf("Error reading config: %v", err)
 	}
-	return &Config{}
+	return &config
 }
