@@ -56,6 +56,69 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 	return i, err
 }
 
+const getRestaurantAndMenuByID = `-- name: GetRestaurantAndMenuByID :many
+SELECT
+    users.id AS restaurant_id,
+    users.user_name AS restaurant_name,
+    users.address AS restaurant_address,
+    users.phone AS restaurant_phone,
+
+    menuitem.id AS menu_item_ID,
+    menuitem.name AS menu_item_name,
+    menuitem.price,
+    menuitem.description,
+    menuitem.available
+
+FROM users
+JOIN menuitem ON users.id = menuitem.restaurant_id
+WHERE users.id = $1 AND users.user_role = 'restaurant'
+`
+
+type GetRestaurantAndMenuByIDRow struct {
+	RestaurantID      int32
+	RestaurantName    sql.NullString
+	RestaurantAddress sql.NullString
+	RestaurantPhone   string
+	MenuItemID        int32
+	MenuItemName      string
+	Price             float64
+	Description       sql.NullString
+	Available         sql.NullBool
+}
+
+func (q *Queries) GetRestaurantAndMenuByID(ctx context.Context, id int32) ([]GetRestaurantAndMenuByIDRow, error) {
+	rows, err := q.db.QueryContext(ctx, getRestaurantAndMenuByID, id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetRestaurantAndMenuByIDRow
+	for rows.Next() {
+		var i GetRestaurantAndMenuByIDRow
+		if err := rows.Scan(
+			&i.RestaurantID,
+			&i.RestaurantName,
+			&i.RestaurantAddress,
+			&i.RestaurantPhone,
+			&i.MenuItemID,
+			&i.MenuItemName,
+			&i.Price,
+			&i.Description,
+			&i.Available,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getUserByEmail = `-- name: GetUserByEmail :one
 SELECT id, email, hash_password, user_role, created_at, phone, address, user_name FROM users
 WHERE email=$1

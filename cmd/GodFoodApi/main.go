@@ -11,9 +11,11 @@ import (
 	"github.com/yourgfslove/GodFoodApi/internal/http-server/auth/login"
 	"github.com/yourgfslove/GodFoodApi/internal/http-server/auth/register"
 	mwLogger "github.com/yourgfslove/GodFoodApi/internal/http-server/middleware/logger"
+	"github.com/yourgfslove/GodFoodApi/internal/http-server/orders/getOrderByID"
 	"github.com/yourgfslove/GodFoodApi/internal/http-server/orders/getOrdersForUser"
 	"github.com/yourgfslove/GodFoodApi/internal/http-server/orders/placeorder"
 	"github.com/yourgfslove/GodFoodApi/internal/http-server/restaurants/GetRestaurants"
+	"github.com/yourgfslove/GodFoodApi/internal/http-server/restaurants/getRestaurantByID"
 	"github.com/yourgfslove/GodFoodApi/internal/http-server/restaurants/menu/getMenu"
 	"github.com/yourgfslove/GodFoodApi/internal/http-server/restaurants/menu/newMenuItem"
 	"github.com/yourgfslove/GodFoodApi/internal/lib/logger/sl"
@@ -48,6 +50,8 @@ func main() {
 	router.Get("/restaurants", GetRestaurants.New(log, DBQueries))
 	router.Post("/orders", placeorder.New(log, DBQueries, DBQueries, DBQueries, cfg.SecretJWT))
 	router.Get("/orders", getOrdersForUser.New(log, DBQueries, cfg.SecretJWT))
+	router.Get("/restaurants/{id}", getRestaurantByID.New(log, DBQueries))
+	router.Get("/orders/{id}", getOrderByID.New(log, DBQueries, cfg.SecretJWT))
 	srv := &http.Server{
 		Addr:         cfg.Address,
 		Handler:      router,

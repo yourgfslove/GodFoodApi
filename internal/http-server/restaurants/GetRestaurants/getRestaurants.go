@@ -18,6 +18,7 @@ type Response struct {
 	response.Response
 	Name         string `json:"name"`
 	Address      string `json:"address"`
+	Phone        string `json:"phone"`
 	RestaurantID int32  `json:"restaurant_id"`
 }
 
@@ -38,6 +39,7 @@ func New(log *slog.Logger, getter restaurantsGetter) http.HandlerFunc {
 				Response:     response.OK(),
 				Name:         i.UserName.String,
 				Address:      i.Address.String,
+				Phone:        i.Phone,
 				RestaurantID: i.ID,
 			})
 		}

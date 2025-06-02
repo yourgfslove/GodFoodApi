@@ -43,6 +43,77 @@ func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (Order
 	return i, err
 }
 
+const getFullOrderByID = `-- name: GetFullOrderByID :many
+SELECT
+    orders.id AS order_id,
+    orders.customerid,
+    orders.restaurantid AS order_restaurant_id,
+    orders.courierid,
+    orders.status,
+    orders.created_at,
+    orders.address,
+
+    orderitem.menu_item_id,
+    orderitem.quanity,
+
+    menuitem.name AS menu_item_name,
+    menuitem.price
+
+FROM orders
+         JOIN orderitem ON orders.id = orderitem.order_id
+         JOIN menuitem ON orderitem.menu_item_id = menuitem.id
+WHERE orders.id = $1
+`
+
+type GetFullOrderByIDRow struct {
+	OrderID           int32
+	Customerid        int32
+	OrderRestaurantID int32
+	Courierid         sql.NullInt32
+	Status            string
+	CreatedAt         sql.NullTime
+	Address           string
+	MenuItemID        int32
+	Quanity           int32
+	MenuItemName      string
+	Price             float64
+}
+
+func (q *Queries) GetFullOrderByID(ctx context.Context, id int32) ([]GetFullOrderByIDRow, error) {
+	rows, err := q.db.QueryContext(ctx, getFullOrderByID, id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetFullOrderByIDRow
+	for rows.Next() {
+		var i GetFullOrderByIDRow
+		if err := rows.Scan(
+			&i.OrderID,
+			&i.Customerid,
+			&i.OrderRestaurantID,
+			&i.Courierid,
+			&i.Status,
+			&i.CreatedAt,
+			&i.Address,
+			&i.MenuItemID,
+			&i.Quanity,
+			&i.MenuItemName,
+			&i.Price,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getFullOrdersByUserID = `-- name: GetFullOrdersByUserID :many
 SELECT
     orders.id AS order_id,
