@@ -25,6 +25,7 @@ type Order struct {
 	Courierid    sql.NullInt32
 	Status       string
 	CreatedAt    sql.NullTime
+	Address      string
 }
 
 type Orderitem struct {
@@ -49,4 +50,6 @@ type User struct {
 	UserRole     string
 	CreatedAt    time.Time
 	Phone        string
+	Address      sql.NullString
+	UserName     sql.NullString
 }

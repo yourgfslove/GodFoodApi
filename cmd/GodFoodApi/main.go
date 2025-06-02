@@ -11,6 +11,11 @@ import (
 	"github.com/yourgfslove/GodFoodApi/internal/http-server/auth/login"
 	"github.com/yourgfslove/GodFoodApi/internal/http-server/auth/register"
 	mwLogger "github.com/yourgfslove/GodFoodApi/internal/http-server/middleware/logger"
+	"github.com/yourgfslove/GodFoodApi/internal/http-server/orders/getOrdersForUser"
+	"github.com/yourgfslove/GodFoodApi/internal/http-server/orders/placeorder"
+	"github.com/yourgfslove/GodFoodApi/internal/http-server/restaurants/GetRestaurants"
+	"github.com/yourgfslove/GodFoodApi/internal/http-server/restaurants/menu/getMenu"
+	"github.com/yourgfslove/GodFoodApi/internal/http-server/restaurants/menu/newMenuItem"
 	"github.com/yourgfslove/GodFoodApi/internal/lib/logger/sl"
 	"log/slog"
 	"net/http"
@@ -37,8 +42,12 @@ func main() {
 	router.Use(middleware.Recoverer)
 	router.Use(middleware.URLFormat)
 	router.Post("/register", register.New(log, DBQueries, DBQueries, cfg.SecretJWT))
-	router.Post("/login", login.New(log, DBQueries, DBQueries, cfg.SecretJWT))
-
+	router.Get("/login", login.New(log, DBQueries, DBQueries, cfg.SecretJWT))
+	router.Post("/restaurants/menuItems", newMenuItem.New(log, DBQueries, DBQueries, cfg.SecretJWT))
+	router.Get("/restaurants/{id}/menuItems", getMenu.New(log, DBQueries))
+	router.Get("/restaurants", GetRestaurants.New(log, DBQueries))
+	router.Post("/orders", placeorder.New(log, DBQueries, DBQueries, DBQueries, cfg.SecretJWT))
+	router.Get("/orders", getOrdersForUser.New(log, DBQueries, cfg.SecretJWT))
 	srv := &http.Server{
 		Addr:         cfg.Address,
 		Handler:      router,

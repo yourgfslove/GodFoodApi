@@ -40,7 +40,7 @@ type UserGetter interface {
 func New(log *slog.Logger, saver RefreshTokenSaverGetter, userGetter UserGetter, tokenSecret string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "http-server.auth.login"
-		log.With(
+		log = log.With(
 			slog.String("op", op),
 			slog.String("request_id", middleware.GetReqID(r.Context())))
 		var req loginRequest

@@ -7,18 +7,21 @@ package database
 
 import (
 	"context"
+	"database/sql"
 )
 
 const createUser = `-- name: CreateUser :one
-INSERT INTO users (email, hash_password, user_role, phone, created_at)
+INSERT INTO users (email, hash_password, user_role, phone, created_at, address, user_name)
 VALUES (
         $1,
         $2,
         $3,
         $4,
-        NOW()
+        NOW(),
+        $5,
+        $6
 )
-RETURNING id, email, hash_password, user_role, created_at, phone
+RETURNING id, email, hash_password, user_role, created_at, phone, address, user_name
 `
 
 type CreateUserParams struct {
@@ -26,6 +29,8 @@ type CreateUserParams struct {
 	HashPassword string
 	UserRole     string
 	Phone        string
+	Address      sql.NullString
+	UserName     sql.NullString
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
@@ -34,6 +39,8 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		arg.HashPassword,
 		arg.UserRole,
 		arg.Phone,
+		arg.Address,
+		arg.UserName,
 	)
 	var i User
 	err := row.Scan(
@@ -43,12 +50,14 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.UserRole,
 		&i.CreatedAt,
 		&i.Phone,
+		&i.Address,
+		&i.UserName,
 	)
 	return i, err
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, email, hash_password, user_role, created_at, phone FROM users
+SELECT id, email, hash_password, user_role, created_at, phone, address, user_name FROM users
 WHERE email=$1
 `
 
@@ -62,6 +71,66 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 		&i.UserRole,
 		&i.CreatedAt,
 		&i.Phone,
+		&i.Address,
+		&i.UserName,
 	)
 	return i, err
+}
+
+const getUserByID = `-- name: GetUserByID :one
+SELECT id, email, hash_password, user_role, created_at, phone, address, user_name FROM users
+WHERE id=$1
+`
+
+func (q *Queries) GetUserByID(ctx context.Context, id int32) (User, error) {
+	row := q.db.QueryRowContext(ctx, getUserByID, id)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.HashPassword,
+		&i.UserRole,
+		&i.CreatedAt,
+		&i.Phone,
+		&i.Address,
+		&i.UserName,
+	)
+	return i, err
+}
+
+const getUsersByRole = `-- name: GetUsersByRole :many
+SELECT id, email, hash_password, user_role, created_at, phone, address, user_name FROM users
+WHERE user_role=$1
+`
+
+func (q *Queries) GetUsersByRole(ctx context.Context, userRole string) ([]User, error) {
+	rows, err := q.db.QueryContext(ctx, getUsersByRole, userRole)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []User
+	for rows.Next() {
+		var i User
+		if err := rows.Scan(
+			&i.ID,
+			&i.Email,
+			&i.HashPassword,
+			&i.UserRole,
+			&i.CreatedAt,
+			&i.Phone,
+			&i.Address,
+			&i.UserName,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }

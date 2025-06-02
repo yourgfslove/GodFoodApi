@@ -2,6 +2,7 @@ package register
 
 import (
 	"context"
+	"database/sql"
 	_ "database/sql"
 	"errors"
 	"github.com/go-chi/chi/v5/middleware"
@@ -21,9 +22,11 @@ import (
 
 type Request struct {
 	Email    string `json:"email" validate:"required,email"`
-	Password string `json:"password"`
-	Role     string `json:"role"`
+	Password string `json:"password" validate:"required"`
+	Role     string `json:"role" validate:"required,oneof=courier restaurant customer"`
 	Phone    string `json:"phone"`
+	Address  string `json:"address,omitempty"`
+	Name     string `json:"name"`
 }
 
 type Response struct {
@@ -31,6 +34,8 @@ type Response struct {
 	Email        string `json:"email"`
 	RefreshToken string `json:"refresh_token"`
 	JWT          string `json:"jwt"`
+	Address      string `json:"address,omitempty"`
+	Name         string `json:"name"`
 }
 
 type UserSaver interface {
@@ -59,9 +64,9 @@ func New(log *slog.Logger, saver UserSaver, tokenSaver RefreshTokenSaver, tokenS
 		log.Info("request body decoded", slog.Any("request", req))
 
 		if err := validator.New().Struct(req); err != nil {
-			log.Error("failed to validate email", sl.Err(err))
+			log.Error("failed to validate request", sl.Err(err))
 			w.WriteHeader(http.StatusBadRequest)
-			render.JSON(w, r, response.Error("failed to validate Email"))
+			render.JSON(w, r, response.ValidationError(err.(validator.ValidationErrors)))
 			return
 		}
 		if !phoneValidation.IsValidRuPhoneNumber(req.Phone) {
@@ -82,6 +87,13 @@ func New(log *slog.Logger, saver UserSaver, tokenSaver RefreshTokenSaver, tokenS
 			HashPassword: hashedPassword,
 			UserRole:     req.Role,
 			Phone:        req.Phone,
+			Address: sql.NullString{
+				String: req.Address,
+				Valid:  req.Address != ""},
+			UserName: sql.NullString{
+				String: req.Name,
+				Valid:  req.Name != "",
+			},
 		})
 		if err != nil {
 			log.Error("failed to create user", sl.Err(err))
@@ -116,6 +128,8 @@ func New(log *slog.Logger, saver UserSaver, tokenSaver RefreshTokenSaver, tokenS
 			Email:        savedUser.Email,
 			RefreshToken: savedToken.Token,
 			JWT:          newJWT,
+			Address:      savedUser.Address.String,
+			Name:         savedUser.UserName.String,
 		})
 	}
 }
