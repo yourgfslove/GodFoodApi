@@ -47,6 +47,12 @@ func New(log *slog.Logger, getter RestaurantGetter) http.HandlerFunc {
 			render.JSON(w, r, response.Error("Invalid restaurant ID"))
 			return
 		}
+		if parsedRestaurantId < 1 {
+			log.Info("invalid restaurant_id")
+			w.WriteHeader(http.StatusBadRequest)
+			render.JSON(w, r, response.Error("invalid restaurant ID"))
+			return
+		}
 		restaurant, err := getter.GetRestaurantAndMenuByID(r.Context(), int32(parsedRestaurantId))
 		if err != nil {
 			log.Info("No restaurant by following id", sl.Err(err))
@@ -56,7 +62,7 @@ func New(log *slog.Logger, getter RestaurantGetter) http.HandlerFunc {
 		}
 		if len(restaurant) == 0 {
 			log.Info("no restaurant by following id", sl.Err(err))
-			w.WriteHeader(http.StatusBadRequest)
+			w.WriteHeader(http.StatusNotFound)
 			render.JSON(w, r, response.Error("Restaurant not found"))
 			return
 		}

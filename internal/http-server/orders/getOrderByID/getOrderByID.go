@@ -2,6 +2,7 @@ package getOrderByID
 
 import (
 	"context"
+	"database/sql"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
@@ -20,11 +21,15 @@ type orderGetter interface {
 	GetFullOrderByID(ctx context.Context, id int32) ([]database.GetFullOrderByIDRow, error)
 }
 
+type courierNameGetter interface {
+	GetNameByID(ctx context.Context, id int32) (sql.NullString, error)
+}
+
 type Response struct {
 	response.Response
 	OrderID      int32   `json:"order_id"`
 	RestaurantID int32   `json:"restaurant_id"`
-	CourierID    int32   `json:"courier_id"`
+	CourierName  string  `json:"courier_name"`
 	Status       string  `json:"status"`
 	UserAddress  string  `json:"user_address"`
 	CreatedAt    string  `json:"created_at"`
@@ -37,7 +42,7 @@ type item struct {
 	Quantity  int32   `json:"quantity"`
 }
 
-func New(log *slog.Logger, getter orderGetter, tokenSecret string) http.HandlerFunc {
+func New(log *slog.Logger, getter orderGetter, courierNameGetter courierNameGetter, tokenSecret string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "http_server.orders.getOrderByID.New"
 		log = log.With(
@@ -84,11 +89,17 @@ func New(log *slog.Logger, getter orderGetter, tokenSecret string) http.HandlerF
 			render.JSON(w, r, response.Error("access denied"))
 			return
 		}
+
+		courierName, err := courierNameGetter.GetNameByID(r.Context(), order[0].Courierid.Int32)
+		if err != nil {
+			log.Info("failed to get courier name", sl.Err(err))
+		}
+
 		resp := Response{
 			Response:     response.OK(),
 			OrderID:      order[0].OrderID,
 			RestaurantID: order[0].OrderRestaurantID,
-			CourierID:    order[0].Courierid.Int32,
+			CourierName:  courierName.String,
 			Status:       order[0].Status,
 			UserAddress:  order[0].Address,
 			CreatedAt:    order[0].CreatedAt.Time.Format(time.RFC3339),

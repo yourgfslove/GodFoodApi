@@ -10,7 +10,6 @@ type Order struct {
 	RestaurantID  string  `json:"restaurant_id"`
 	Status        string  `json:"status"`
 	TotalPrice    float64 `json:"total_price"`
-	CourierID     int32   `json:"courier_id"`
 	ClientAddress string  `json:"client_address"`
 	CreatedAt     string  `json:"created_at"`
 	Items         []Item  `json:"items"`
@@ -28,15 +27,10 @@ func MakeOrders(rows []database.GetFullOrdersByUserIDRow) []Order {
 	for _, row := range rows {
 		order, exists := ordersMap[row.OrderID]
 		if !exists {
-			courierid := int32(0)
-			if row.Courierid.Valid {
-				courierid = row.Courierid.Int32
-			}
 			order = &Order{
 				RestaurantID:  strconv.Itoa(int(row.OrderRestaurantID)),
 				Status:        row.Status,
 				TotalPrice:    0,
-				CourierID:     courierid,
 				ClientAddress: row.Address,
 				CreatedAt:     row.CreatedAt.Time.Format(time.RFC822),
 				Items:         []Item{},

@@ -37,7 +37,6 @@ func main() {
 		os.Exit(1)
 	}
 	DBQueries := database.New(storage)
-
 	router := chi.NewRouter()
 	router.Use(middleware.RequestID)
 	router.Use(mwLogger.New(log))
@@ -48,10 +47,10 @@ func main() {
 	router.Post("/restaurants/menuItems", newMenuItem.New(log, DBQueries, DBQueries, cfg.SecretJWT))
 	router.Get("/restaurants/{id}/menuItems", getMenu.New(log, DBQueries))
 	router.Get("/restaurants", GetRestaurants.New(log, DBQueries))
-	router.Post("/orders", placeorder.New(log, DBQueries, DBQueries, DBQueries, cfg.SecretJWT))
+	router.Post("/orders", placeorder.New(log, DBQueries, DBQueries, DBQueries, cfg.SecretJWT, DBQueries))
 	router.Get("/orders", getOrdersForUser.New(log, DBQueries, cfg.SecretJWT))
 	router.Get("/restaurants/{id}", getRestaurantByID.New(log, DBQueries))
-	router.Get("/orders/{id}", getOrderByID.New(log, DBQueries, cfg.SecretJWT))
+	router.Get("/orders/{id}", getOrderByID.New(log, DBQueries, DBQueries, cfg.SecretJWT))
 	srv := &http.Server{
 		Addr:         cfg.Address,
 		Handler:      router,

@@ -78,7 +78,7 @@ func New(log *slog.Logger, creater menuItemCreater, userGetter userGetter, token
 			render.JSON(w, r, response.Error("wrong role"))
 			return
 		}
-		newItem, err := creater.CreateMenuItem(context.Background(), database.CreateMenuItemParams{
+		newItem, err := creater.CreateMenuItem(r.Context(), database.CreateMenuItemParams{
 			RestaurantID: userID,
 			Name:         req.Name,
 			Price:        req.Price,

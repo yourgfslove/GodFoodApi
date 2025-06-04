@@ -82,7 +82,7 @@ func New(log *slog.Logger, saver UserSaver, tokenSaver RefreshTokenSaver, tokenS
 			render.JSON(w, r, response.Error("failed to set password"))
 			return
 		}
-		savedUser, err := saver.CreateUser(context.Background(), database.CreateUserParams{
+		savedUser, err := saver.CreateUser(r.Context(), database.CreateUserParams{
 			Email:        req.Email,
 			HashPassword: hashedPassword,
 			UserRole:     req.Role,
@@ -108,13 +108,14 @@ func New(log *slog.Logger, saver UserSaver, tokenSaver RefreshTokenSaver, tokenS
 			render.JSON(w, r, response.Error("something went wrong"))
 			return
 		}
-		savedToken, err := tokenSaver.CreateToken(context.Background(), database.CreateTokenParams{
+		savedToken, err := tokenSaver.CreateToken(r.Context(), database.CreateTokenParams{
 			UserID: savedUser.ID,
 			Token:  newRefreshToken})
 		if err != nil {
 			log.Error("failed to save token", sl.Err(err))
 			w.WriteHeader(http.StatusInternalServerError)
 			render.JSON(w, r, response.Error("something went wrong"))
+			return
 		}
 		newJWT, err := JWT.MakeJWT(savedUser.ID, tokenSecret, time.Hour)
 		if err != nil {

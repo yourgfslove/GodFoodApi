@@ -2,6 +2,7 @@ package placeorder
 
 import (
 	"context"
+	"fmt"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
 	"github.com/yourgfslove/GodFoodApi/internal/database"
@@ -11,14 +12,20 @@ import (
 	"github.com/yourgfslove/GodFoodApi/internal/lib/logger/sl"
 	"log/slog"
 	"net/http"
+	"slices"
+	"time"
 )
 
 type orderCreater interface {
 	CreateOrder(ctx context.Context, arg database.CreateOrderParams) (database.Order, error)
 }
 
-type menuItemsAdder interface {
+type menuItemsAdderNGetter interface {
 	AddItems(ctx context.Context, arg database.AddItemsParams) ([]database.Orderitem, error)
+}
+
+type availableItemsGetter interface {
+	GetAvailableIDByRestaurantID(ctx context.Context, restaurantID int32) ([]int32, error)
 }
 
 type userGetter interface {
@@ -47,7 +54,14 @@ type Response struct {
 	} `json:"items"`
 }
 
-func New(log *slog.Logger, creater orderCreater, userGetter userGetter, adder menuItemsAdder, tokensecret string) http.HandlerFunc {
+func New(
+	log *slog.Logger,
+	creater orderCreater,
+	userGetter userGetter,
+	adder menuItemsAdderNGetter,
+	tokensecret string,
+	availableGetter availableItemsGetter,
+) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "http-server.ordersStruct.placeorder"
 		log = log.With(slog.String("op", op),
@@ -61,7 +75,7 @@ func New(log *slog.Logger, creater orderCreater, userGetter userGetter, adder me
 		}
 		userID, err := JWT.ValidateJWT(token, tokensecret)
 		if err != nil {
-			log.Info("failed to validate token", "err", sl.Err(err))
+			log.Info("failed to validate token", sl.Err(err))
 			w.WriteHeader(http.StatusUnauthorized)
 			render.JSON(w, r, response.Error("failed to validate token"))
 			return
@@ -86,6 +100,22 @@ func New(log *slog.Logger, creater orderCreater, userGetter userGetter, adder me
 			render.JSON(w, r, response.Error("no items found"))
 			return
 		}
+
+		availableItems, err := availableGetter.GetAvailableIDByRestaurantID(r.Context(), req.RestaurantID)
+		if err != nil {
+			log.Info("failed to get available items", sl.Err(err))
+			w.WriteHeader(http.StatusInternalServerError)
+			render.JSON(w, r, response.Error("failed to get available items"))
+			return
+		}
+		for _, item := range req.Items {
+			if !slices.Contains(availableItems, item.MenuitemID) {
+				log.Info(fmt.Sprintf("item %v is not available", item.MenuitemID))
+				w.WriteHeader(http.StatusBadRequest)
+				render.JSON(w, r, response.Error(fmt.Sprintf("item %v is not available", item.MenuitemID)))
+				return
+			}
+		}
 		address := req.Address
 		if address == "" {
 			if !userInfo.Address.Valid {
@@ -96,6 +126,7 @@ func New(log *slog.Logger, creater orderCreater, userGetter userGetter, adder me
 			}
 			address = userInfo.Address.String
 		}
+
 		order, err := creater.CreateOrder(r.Context(), database.CreateOrderParams{
 			Customerid:   userInfo.ID,
 			Restaurantid: req.RestaurantID,
@@ -133,7 +164,7 @@ func New(log *slog.Logger, creater orderCreater, userGetter userGetter, adder me
 			order.ID,
 			req.RestaurantID,
 			order.Status,
-			order.CreatedAt.Time.Format("2006-01-02 15:04:05"),
+			order.CreatedAt.Time.Format(time.RFC850),
 			order.Address,
 			req.Items,
 		})

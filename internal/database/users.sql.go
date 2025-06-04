@@ -56,6 +56,18 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 	return i, err
 }
 
+const getNameByID = `-- name: GetNameByID :one
+SELECT user_name FROM users
+WHERE id=$1
+`
+
+func (q *Queries) GetNameByID(ctx context.Context, id int32) (sql.NullString, error) {
+	row := q.db.QueryRowContext(ctx, getNameByID, id)
+	var user_name sql.NullString
+	err := row.Scan(&user_name)
+	return user_name, err
+}
+
 const getRestaurantAndMenuByID = `-- name: GetRestaurantAndMenuByID :many
 SELECT
     users.id AS restaurant_id,

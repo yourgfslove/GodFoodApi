@@ -17,11 +17,15 @@ type menuGetter interface {
 }
 
 type Response struct {
-	RestaurantID int32   `json:"restaurant_id"`
-	Name         string  `json:"name"`
-	Price        float64 `json:"price"`
-	Description  string  `json:"description"`
-	Available    bool    `json:"available"`
+	RestaurantID int32  `json:"restaurant_id"`
+	Menu         []Item `json:"menu"`
+}
+
+type Item struct {
+	Name        string  `json:"name"`
+	Price       float64 `json:"price"`
+	Description string  `json:"description"`
+	Available   bool    `json:"available"`
 }
 
 func New(log *slog.Logger, getter menuGetter) http.HandlerFunc {
@@ -44,7 +48,7 @@ func New(log *slog.Logger, getter menuGetter) http.HandlerFunc {
 			return
 		}
 		log.Info("restaurant_id is parsed")
-		menu, err := getter.GetMenu(context.Background(), int32(IntRestaurantID))
+		menu, err := getter.GetMenu(r.Context(), int32(IntRestaurantID))
 		if err != nil {
 			log.Info("wrong ID")
 			w.WriteHeader(http.StatusBadRequest)
@@ -57,14 +61,18 @@ func New(log *slog.Logger, getter menuGetter) http.HandlerFunc {
 			render.JSON(w, r, response.Error("restaurant not found"))
 			return
 		}
+		resMenu := make([]Item, 0, len(menu))
 		for _, i := range menu {
-			render.JSON(w, r, Response{
-				RestaurantID: i.ID,
-				Name:         i.Name,
-				Price:        i.Price,
-				Description:  i.Description.String,
-				Available:    i.Available.Bool,
+			resMenu = append(resMenu, Item{
+				Name:        i.Name,
+				Price:       i.Price,
+				Description: i.Description.String,
+				Available:   i.Available.Bool,
 			})
 		}
+		render.JSON(w, r, Response{
+			RestaurantID: int32(IntRestaurantID),
+			Menu:         resMenu,
+		})
 	}
 }

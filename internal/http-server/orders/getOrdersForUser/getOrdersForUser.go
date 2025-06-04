@@ -31,9 +31,10 @@ func New(log *slog.Logger, getter OrderGetter, tokenSecret string) http.HandlerF
 			slog.String("request_id", middleware.GetReqID(r.Context())))
 		token, err := getToken.GetTokenFromHeader(r.Header, "Bearer")
 		if err != nil {
-			log.Info("failed to get the token", sl.Err(err))
+			log.Error("failed to get the token", sl.Err(err))
 			w.WriteHeader(http.StatusUnauthorized)
 			render.JSON(w, r, response.Error("failed to get token"))
+			return
 		}
 		userID, err := JWT.ValidateJWT(token, tokenSecret)
 		if err != nil {
@@ -50,16 +51,19 @@ func New(log *slog.Logger, getter OrderGetter, tokenSecret string) http.HandlerF
 			return
 		}
 		orders := ordersStruct.MakeOrders(ordersInfo)
-		if orders == nil {
+		if len(orders) == 0 {
 			log.Info("No orders found")
 			w.WriteHeader(http.StatusNoContent)
-			render.JSON(w, r, response.Error("No orders found"))
+			render.JSON(w, r, Response{
+				response.OK(),
+				[]ordersStruct.Order{},
+			})
 		}
 		log.Info("got orders")
 		w.WriteHeader(http.StatusOK)
 		render.JSON(w, r, Response{
 			response.OK(),
-			ordersStruct.MakeOrders(ordersInfo),
+			orders,
 		})
 	}
 }

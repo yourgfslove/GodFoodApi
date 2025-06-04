@@ -40,3 +40,8 @@ SELECT
 FROM users
 JOIN menuitem ON users.id = menuitem.restaurant_id
 WHERE users.id = $1 AND users.user_role = 'restaurant';
+
+
+-- name: GetNameByID :one
+SELECT user_name FROM users
+WHERE id=$1;    

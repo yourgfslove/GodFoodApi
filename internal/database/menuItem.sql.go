@@ -50,6 +50,34 @@ func (q *Queries) CreateMenuItem(ctx context.Context, arg CreateMenuItemParams) 
 	return i, err
 }
 
+const getAvailableIDByRestaurantID = `-- name: GetAvailableIDByRestaurantID :many
+SELECT id FROM menuitem
+WHERE restaurant_id=$1 AND available=true
+`
+
+func (q *Queries) GetAvailableIDByRestaurantID(ctx context.Context, restaurantID int32) ([]int32, error) {
+	rows, err := q.db.QueryContext(ctx, getAvailableIDByRestaurantID, restaurantID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int32
+	for rows.Next() {
+		var id int32
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getMenu = `-- name: GetMenu :many
 SELECT id, restaurant_id, name, price, description, available FROM menuitem
 WHERE restaurant_id=$1

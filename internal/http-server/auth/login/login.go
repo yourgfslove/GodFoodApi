@@ -57,7 +57,7 @@ func New(log *slog.Logger, saver RefreshTokenSaverGetter, userGetter UserGetter,
 			render.JSON(w, r, response.Error("failed to validate email"))
 			return
 		}
-		user, err := userGetter.GetUserByEmail(context.Background(), req.Email)
+		user, err := userGetter.GetUserByEmail(r.Context(), req.Email)
 		if err != nil {
 			log.Error("failed to get user by email", sl.Err(err))
 			w.WriteHeader(http.StatusInternalServerError)
@@ -66,15 +66,16 @@ func New(log *slog.Logger, saver RefreshTokenSaverGetter, userGetter UserGetter,
 		}
 		if err := hashPassword.VerifyPassword(req.Password, user.HashPassword); err != nil {
 			log.Error("failed to verify password", sl.Err(err))
-			w.WriteHeader(http.StatusBadRequest)
+			w.WriteHeader(http.StatusUnauthorized)
 			render.JSON(w, r, response.Error("wrong password"))
 			return
 		}
-		refreshTokens, err := saver.GetTokensByUser(context.Background(), user.ID)
+		refreshTokens, err := saver.GetTokensByUser(r.Context(), user.ID)
 		if err != nil {
 			log.Error("failed to get tokens by user", sl.Err(err))
 			w.WriteHeader(http.StatusInternalServerError)
 			render.JSON(w, r, response.Error("failed to get tokens by user"))
+			return
 		}
 		var userRefreshToken string
 		for _, t := range refreshTokens {
@@ -91,7 +92,7 @@ func New(log *slog.Logger, saver RefreshTokenSaverGetter, userGetter UserGetter,
 				render.JSON(w, r, response.Error("something went wrong"))
 				return
 			}
-			_, err = saver.CreateToken(context.Background(), database.CreateTokenParams{
+			_, err = saver.CreateToken(r.Context(), database.CreateTokenParams{
 				Token:  userRefreshToken,
 				UserID: user.ID,
 			})

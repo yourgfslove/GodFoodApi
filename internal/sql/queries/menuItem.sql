@@ -12,3 +12,8 @@ VALUES (
         $5
 )
 RETURNING *;
+
+
+-- name: GetAvailableIDByRestaurantID :many
+SELECT id FROM menuitem
+WHERE restaurant_id=$1 AND available=true;
