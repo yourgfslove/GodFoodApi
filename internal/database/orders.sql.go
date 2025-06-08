@@ -43,40 +43,66 @@ func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (Order
 	return i, err
 }
 
+const getCurrentOrderForCourier = `-- name: GetCurrentOrderForCourier :one
+SELECT id FROM orders
+WHERE status = 'delivering' AND courierid=$1
+`
+
+func (q *Queries) GetCurrentOrderForCourier(ctx context.Context, courierid sql.NullInt32) (int32, error) {
+	row := q.db.QueryRowContext(ctx, getCurrentOrderForCourier, courierid)
+	var id int32
+	err := row.Scan(&id)
+	return id, err
+}
+
 const getFullOrderByID = `-- name: GetFullOrderByID :many
 SELECT
     orders.id AS order_id,
-    orders.customerid,
-    orders.restaurantid AS order_restaurant_id,
-    orders.courierid,
     orders.status,
     orders.created_at,
-    orders.address,
+    orders.address AS delivery_address,
 
     orderitem.menu_item_id,
     orderitem.quanity,
 
     menuitem.name AS menu_item_name,
-    menuitem.price
+    menuitem.price,
+
+    restaurants.address AS restaurant_address,
+    restaurants.user_name AS restaurant_name,
+    restaurants.phone AS restaurant_phone,
+
+    customer.user_name AS costomer_name,
+    customer.phone AS customer_phone,
+    customer.id AS customer_id,
+
+    courier.user_name AS courier_name
 
 FROM orders
          JOIN orderitem ON orders.id = orderitem.order_id
          JOIN menuitem ON orderitem.menu_item_id = menuitem.id
+         JOIN users AS restaurants ON orders.restaurantid = restaurants.id
+         JOIN users AS customer ON orders.customerid = customer.id
+        LEFT JOIN users AS courier ON orders.courierid = courier.id
 WHERE orders.id = $1
 `
 
 type GetFullOrderByIDRow struct {
 	OrderID           int32
-	Customerid        int32
-	OrderRestaurantID int32
-	Courierid         sql.NullInt32
 	Status            string
 	CreatedAt         sql.NullTime
-	Address           string
+	DeliveryAddress   string
 	MenuItemID        int32
 	Quanity           int32
 	MenuItemName      string
 	Price             float64
+	RestaurantAddress sql.NullString
+	RestaurantName    sql.NullString
+	RestaurantPhone   string
+	CostomerName      sql.NullString
+	CustomerPhone     string
+	CustomerID        int32
+	CourierName       sql.NullString
 }
 
 func (q *Queries) GetFullOrderByID(ctx context.Context, id int32) ([]GetFullOrderByIDRow, error) {
@@ -90,16 +116,20 @@ func (q *Queries) GetFullOrderByID(ctx context.Context, id int32) ([]GetFullOrde
 		var i GetFullOrderByIDRow
 		if err := rows.Scan(
 			&i.OrderID,
-			&i.Customerid,
-			&i.OrderRestaurantID,
-			&i.Courierid,
 			&i.Status,
 			&i.CreatedAt,
-			&i.Address,
+			&i.DeliveryAddress,
 			&i.MenuItemID,
 			&i.Quanity,
 			&i.MenuItemName,
 			&i.Price,
+			&i.RestaurantAddress,
+			&i.RestaurantName,
+			&i.RestaurantPhone,
+			&i.CostomerName,
+			&i.CustomerPhone,
+			&i.CustomerID,
+			&i.CourierName,
 		); err != nil {
 			return nil, err
 		}
@@ -117,37 +147,45 @@ func (q *Queries) GetFullOrderByID(ctx context.Context, id int32) ([]GetFullOrde
 const getFullOrdersByUserID = `-- name: GetFullOrdersByUserID :many
 SELECT
     orders.id AS order_id,
-    orders.customerid,
-    orders.restaurantid AS order_restaurant_id,
-    orders.courierid,
     orders.status,
     orders.created_at,
-    orders.address,
+    orders.address AS delivery_address,
 
     orderitem.menu_item_id,
     orderitem.quanity,
 
     menuitem.name AS menu_item_name,
-    menuitem.price
+    menuitem.price,
+
+    restaurants.address AS restaurant_address,
+    restaurants.user_name AS restaurant_name,
+    restaurants.phone AS restaurant_phone,
+
+    customer.user_name AS costomer_name,
+    customer.phone AS customer_phone
 
 FROM orders
          JOIN orderitem ON orders.id = orderitem.order_id
          JOIN menuitem ON orderitem.menu_item_id = menuitem.id
+         JOIN users AS restaurants ON orders.restaurantid = restaurants.id
+         JOIN users AS customer ON orders.customerid = customer.id
 WHERE orders.customerid = $1
 `
 
 type GetFullOrdersByUserIDRow struct {
 	OrderID           int32
-	Customerid        int32
-	OrderRestaurantID int32
-	Courierid         sql.NullInt32
 	Status            string
 	CreatedAt         sql.NullTime
-	Address           string
+	DeliveryAddress   string
 	MenuItemID        int32
 	Quanity           int32
 	MenuItemName      string
 	Price             float64
+	RestaurantAddress sql.NullString
+	RestaurantName    sql.NullString
+	RestaurantPhone   string
+	CostomerName      sql.NullString
+	CustomerPhone     string
 }
 
 func (q *Queries) GetFullOrdersByUserID(ctx context.Context, customerid int32) ([]GetFullOrdersByUserIDRow, error) {
@@ -161,16 +199,18 @@ func (q *Queries) GetFullOrdersByUserID(ctx context.Context, customerid int32) (
 		var i GetFullOrdersByUserIDRow
 		if err := rows.Scan(
 			&i.OrderID,
-			&i.Customerid,
-			&i.OrderRestaurantID,
-			&i.Courierid,
 			&i.Status,
 			&i.CreatedAt,
-			&i.Address,
+			&i.DeliveryAddress,
 			&i.MenuItemID,
 			&i.Quanity,
 			&i.MenuItemName,
 			&i.Price,
+			&i.RestaurantAddress,
+			&i.RestaurantName,
+			&i.RestaurantPhone,
+			&i.CostomerName,
+			&i.CustomerPhone,
 		); err != nil {
 			return nil, err
 		}
@@ -183,4 +223,97 @@ func (q *Queries) GetFullOrdersByUserID(ctx context.Context, customerid int32) (
 		return nil, err
 	}
 	return items, nil
+}
+
+const getFullPendingOrders = `-- name: GetFullPendingOrders :many
+SELECT
+    orders.id AS order_id,
+    orders.status,
+    orders.created_at,
+    orders.address AS delivery_address,
+
+    orderitem.menu_item_id,
+    orderitem.quanity,
+
+    menuitem.name AS menu_item_name,
+    menuitem.price,
+
+    restaurants.address AS restaurant_address,
+    restaurants.user_name AS restaurant_name,
+    restaurants.phone AS restaurant_phone,
+
+    customer.user_name AS costomer_name,
+    customer.phone AS customer_phone
+
+FROM orders
+         JOIN orderitem ON orders.id = orderitem.order_id
+         JOIN menuitem ON orderitem.menu_item_id = menuitem.id
+         JOIN users AS restaurants ON orders.restaurantid = restaurants.id
+        JOIN users AS customer ON orders.customerid = customer.id
+WHERE orders.status = 'pending'
+`
+
+type GetFullPendingOrdersRow struct {
+	OrderID           int32
+	Status            string
+	CreatedAt         sql.NullTime
+	DeliveryAddress   string
+	MenuItemID        int32
+	Quanity           int32
+	MenuItemName      string
+	Price             float64
+	RestaurantAddress sql.NullString
+	RestaurantName    sql.NullString
+	RestaurantPhone   string
+	CostomerName      sql.NullString
+	CustomerPhone     string
+}
+
+func (q *Queries) GetFullPendingOrders(ctx context.Context) ([]GetFullPendingOrdersRow, error) {
+	rows, err := q.db.QueryContext(ctx, getFullPendingOrders)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetFullPendingOrdersRow
+	for rows.Next() {
+		var i GetFullPendingOrdersRow
+		if err := rows.Scan(
+			&i.OrderID,
+			&i.Status,
+			&i.CreatedAt,
+			&i.DeliveryAddress,
+			&i.MenuItemID,
+			&i.Quanity,
+			&i.MenuItemName,
+			&i.Price,
+			&i.RestaurantAddress,
+			&i.RestaurantName,
+			&i.RestaurantPhone,
+			&i.CostomerName,
+			&i.CustomerPhone,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getOrderStatusByID = `-- name: GetOrderStatusByID :one
+SELECT orders.status FROM orders
+WHERE orders.id = $1
+`
+
+func (q *Queries) GetOrderStatusByID(ctx context.Context, id int32) (string, error) {
+	row := q.db.QueryRowContext(ctx, getOrderStatusByID, id)
+	var status string
+	err := row.Scan(&status)
+	return status, err
 }

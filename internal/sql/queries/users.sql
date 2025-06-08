@@ -44,4 +44,5 @@ WHERE users.id = $1 AND users.user_role = 'restaurant';
 
 -- name: GetNameByID :one
 SELECT user_name FROM users
-WHERE id=$1;    
+WHERE id=$1;
+

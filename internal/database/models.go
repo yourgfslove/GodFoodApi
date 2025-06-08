@@ -9,6 +9,12 @@ import (
 	"time"
 )
 
+type Couriersstat struct {
+	ID         int32
+	Status     string
+	Ordercount sql.NullInt32
+}
+
 type Menuitem struct {
 	ID           int32
 	RestaurantID int32

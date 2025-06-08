@@ -7,8 +7,6 @@ import (
 	"github.com/go-chi/render"
 	"github.com/yourgfslove/GodFoodApi/internal/database"
 	"github.com/yourgfslove/GodFoodApi/internal/lib/api/response"
-	"github.com/yourgfslove/GodFoodApi/internal/lib/auth/JWT"
-	"github.com/yourgfslove/GodFoodApi/internal/lib/auth/getToken"
 	"github.com/yourgfslove/GodFoodApi/internal/lib/logger/sl"
 	"log/slog"
 	"net/http"
@@ -59,27 +57,15 @@ func New(
 	creater orderCreater,
 	userGetter userGetter,
 	adder menuItemsAdderNGetter,
-	tokensecret string,
 	availableGetter availableItemsGetter,
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "http-server.ordersStruct.placeorder"
 		log = log.With(slog.String("op", op),
 			slog.String("request_id", middleware.GetReqID(r.Context())))
-		token, err := getToken.GetTokenFromHeader(r.Header, "Bearer")
-		if err != nil {
-			log.Info("failed to get token from header", "err", sl.Err(err))
-			w.WriteHeader(http.StatusUnauthorized)
-			render.JSON(w, r, response.Error("failed to get token"))
-			return
-		}
-		userID, err := JWT.ValidateJWT(token, tokensecret)
-		if err != nil {
-			log.Info("failed to validate token", sl.Err(err))
-			w.WriteHeader(http.StatusUnauthorized)
-			render.JSON(w, r, response.Error("failed to validate token"))
-			return
-		}
+
+		userID := r.Context().Value("userID").(int32)
+
 		userInfo, err := userGetter.GetUserByID(r.Context(), int32(userID))
 		if err != nil {
 			log.Info("failed to get user by id", sl.Err(err))

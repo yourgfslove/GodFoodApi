@@ -5,6 +5,7 @@
     <file url="file://$PROJECT_DIR$/internal/sql/queries/orders.sql" dialect="PostgreSQL" />
     <file url="file://$PROJECT_DIR$/internal/sql/queries/users.sql" dialect="PostgreSQL" />
     <file url="file://$PROJECT_DIR$/internal/sql/schema/003_Order.sql" dialect="PostgreSQL" />
+    <file url="file://$PROJECT_DIR$/internal/sql/schema/011_couriers.sql" dialect="PostgreSQL" />
     <file url="PROJECT" dialect="PostgreSQL" />
   </component>
   <component name="SqlResolveMappings">
