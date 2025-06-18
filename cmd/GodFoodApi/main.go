@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"fmt"
 	_ "github.com/lib/pq"
+	"github.com/swaggo/http-swagger"
+	_ "github.com/yourgfslove/GodFoodApi/docs"
 	"github.com/yourgfslove/GodFoodApi/internal/config"
 	"github.com/yourgfslove/GodFoodApi/internal/database"
 	myrouter "github.com/yourgfslove/GodFoodApi/internal/http-server/router"
@@ -13,6 +15,13 @@ import (
 	"os"
 )
 
+// @title GodFood API
+// @version 1.0
+// @description REST API for food delivery
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+// @description Введите токен в формате: Bearer {token}
 func main() {
 	fmt.Println("Starting server...")
 	cfg := config.MustLoadConfig()
@@ -34,6 +43,7 @@ func main() {
 			SecretJWT string
 		}{},
 	}
+	router.Get("/docs/*", httpSwagger.WrapHandler)
 	myrouter.SetupRoutes(router, deps)
 	srv := &http.Server{
 		Addr:         cfg.Address,

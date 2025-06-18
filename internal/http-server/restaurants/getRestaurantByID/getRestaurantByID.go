@@ -7,7 +7,6 @@ import (
 	"github.com/go-chi/render"
 	"github.com/yourgfslove/GodFoodApi/internal/database"
 	"github.com/yourgfslove/GodFoodApi/internal/lib/api/response"
-	"github.com/yourgfslove/GodFoodApi/internal/lib/logger/sl"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -18,21 +17,31 @@ type RestaurantGetter interface {
 }
 
 type Response struct {
-	response.Response
-	RestaurantID      int32  `json:"restaurant_id"`
-	RestaurantName    string `json:"restaurant_name"`
-	RestaurantAddress string `json:"restaurant_address"`
-	RestaurantPhone   string `json:"restaurant_phone"`
+	RestaurantID      int32  `json:"restaurant_id" example:"14"`
+	RestaurantName    string `json:"restaurant_name" example:"mac"`
+	RestaurantAddress string `json:"restaurant_address" example:"112 address"`
+	RestaurantPhone   string `json:"restaurant_phone" example:"89053435656"`
 	MenuItems         []item `json:"menu_items"`
 }
 
 type item struct {
-	ItemID          int32   `json:"item_id"`
-	ItemName        string  `json:"item_name"`
-	ItemPrice       float64 `json:"item_price"`
-	ItemDescription string  `json:"item_description"`
+	ItemID          int32   `json:"item_id" example:"1"`
+	ItemName        string  `json:"item_name" example:"cheeseburger"`
+	ItemPrice       float64 `json:"item_price" example:"122.00"`
+	ItemDescription string  `json:"item_description" example:"burger with cheese"`
 }
 
+// Restaurants godoc
+// @Summary Получение Ресторана по айди
+// @Description Возвращает полную информацию по ресторану(Айди, имя, адрес, телефон) и меню по айди
+// @Tags Restaurants
+// @Accept json
+// @Produce json
+// @Param id path int true "ID ресторана"
+// @Success 200 {object} getRestaurantByID.Response "Ресторан успешно получен"
+// @Failure 400 {object} response.Response "Некорректные данные"
+// @Failure 404 {object} response.Response "Ресторан не найден"
+// @Router /restaurants/{id} [get]
 func New(log *slog.Logger, getter RestaurantGetter) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "http.restaurants.getRestaurantByID"
@@ -40,34 +49,35 @@ func New(log *slog.Logger, getter RestaurantGetter) http.HandlerFunc {
 			slog.String("op", op),
 			slog.String("request-id", middleware.GetReqID(r.Context())))
 		restaurantID := chi.URLParam(r, "id")
+
+		if restaurantID == "" {
+			response.Error(log, w, r, "No ID in URL", "empty ID", http.StatusBadRequest)
+			return
+		}
+
 		parsedRestaurantId, err := strconv.ParseInt(restaurantID, 10, 32)
 		if err != nil {
-			log.Info("invalid restaurant_id", sl.Err(err))
-			w.WriteHeader(http.StatusBadRequest)
-			render.JSON(w, r, response.Error("Invalid restaurant ID"))
+			response.Error(log, w, r, "Invalid restaurant ID", "Failed to parse ID", http.StatusBadRequest)
 			return
 		}
+
 		if parsedRestaurantId < 1 {
-			log.Info("invalid restaurant_id")
-			w.WriteHeader(http.StatusBadRequest)
-			render.JSON(w, r, response.Error("invalid restaurant ID"))
+			response.Error(log, w, r, "invalid restaurant ID", "ID < 1", http.StatusBadRequest)
 			return
 		}
+
 		restaurant, err := getter.GetRestaurantAndMenuByID(r.Context(), int32(parsedRestaurantId))
 		if err != nil {
-			log.Info("No restaurant by following id", sl.Err(err))
-			w.WriteHeader(http.StatusBadRequest)
-			render.JSON(w, r, response.Error("Restaurant not found"))
+			response.Error(log, w, r, "Not Found", "no restaurant by folowing ID", http.StatusNotFound)
 			return
 		}
+
 		if len(restaurant) == 0 {
-			log.Info("no restaurant by following id", sl.Err(err))
-			w.WriteHeader(http.StatusNotFound)
-			render.JSON(w, r, response.Error("Restaurant not found"))
+			response.Error(log, w, r, "Not Found", "empty list", http.StatusNotFound)
 			return
 		}
+
 		resp := Response{
-			Response:          response.OK(),
 			RestaurantID:      restaurant[0].RestaurantID,
 			RestaurantName:    restaurant[0].RestaurantName.String,
 			RestaurantAddress: restaurant[0].RestaurantAddress.String,
@@ -85,7 +95,9 @@ func New(log *slog.Logger, getter RestaurantGetter) http.HandlerFunc {
 				resp.MenuItems = append(resp.MenuItems, menuItem)
 			}
 		}
+
 		log.Info("Got restaurant")
+		render.Status(r, http.StatusOK)
 		render.JSON(w, r, resp)
 	}
 }

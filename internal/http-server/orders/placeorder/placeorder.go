@@ -31,27 +31,39 @@ type userGetter interface {
 }
 
 type Request struct {
-	RestaurantID int32  `json:"restaurant_id"`
-	Address      string `json:"address,omitempty"`
+	RestaurantID int32  `json:"restaurant_id" example:"14"`
+	Address      string `json:"address,omitempty" example:"123 address"`
 	Items        []struct {
-		MenuitemID int32 `json:"menuitem_id"`
-		Quantity   int32 `json:"quantity"`
+		MenuitemID int32 `json:"menuitem_id" example:"6"`
+		Quantity   int32 `json:"quantity" example:"5"`
 	} `json:"items"`
 }
 
 type Response struct {
-	response.Response
-	OrderID      int32  `json:"order_id"`
-	RestaurantID int32  `json:"restaurant_id"`
-	Status       string `json:"status"`
-	CreatedAt    string `json:"created_at"`
-	Address      string `json:"user_address"`
+	OrderID      int32  `json:"order_id" example:"12"`
+	RestaurantID int32  `json:"restaurant_id" example:"14"`
+	Status       string `json:"status" example:"pending"`
+	CreatedAt    string `json:"created_at" example:"Tue, 17 Jun 2025 00:25:16 +0000"`
+	Address      string `json:"user_address" example:"123 address"`
 	Items        []struct {
-		MenuitemID int32 `json:"menuitem_id"`
-		Quantity   int32 `json:"quantity"`
+		MenuitemID int32 `json:"menuitem_id" example:"6"`
+		Quantity   int32 `json:"quantity" example:"5"`
 	} `json:"items"`
 }
 
+// Orders godoc
+// @Summary Создание нового заказа авторизованным пользователем
+// @Description Создает новый заказ
+// @Tags Orders
+// @Accept json
+// @Produce json
+// @Param request body placeorder.Request true "Данные для добавления"
+// @Success 200 {object} placeorder.Response "Новый заказ успешно создан "
+// @Failure 400 {object} response.Response "Некорректные данные"
+// @Failure 401 {object} response.Response "Неавторизован"
+// @Failure 500 {object} response.Response "Серверная Ошибка"
+// @Router /orders [post]
+// @Security BearerAuth
 func New(
 	log *slog.Logger,
 	creater orderCreater,
@@ -68,46 +80,39 @@ func New(
 
 		userInfo, err := userGetter.GetUserByID(r.Context(), int32(userID))
 		if err != nil {
-			log.Info("failed to get user by id", sl.Err(err))
-			w.WriteHeader(http.StatusInternalServerError)
-			render.JSON(w, r, response.Error("failed to get user"))
+			response.Error(log, w, r, "failed to get user", sl.Err(err).String(), http.StatusInternalServerError)
 			return
 		}
+
 		var req Request
 		if err := render.DecodeJSON(r.Body, &req); err != nil {
-			log.Info("failed to decode request body", sl.Err(err))
-			w.WriteHeader(http.StatusBadRequest)
-			render.JSON(w, r, response.Error("failed to decode request body"))
+			response.Error(log, w, r, "failed to decode request body", sl.Err(err).String(), http.StatusBadRequest)
 			return
 		}
+
 		if len(req.Items) == 0 {
-			log.Info("no items found")
-			w.WriteHeader(http.StatusBadRequest)
-			render.JSON(w, r, response.Error("no items found"))
+			response.Error(log, w, r, "Not Found", "not items found", http.StatusNotFound)
 			return
 		}
 
 		availableItems, err := availableGetter.GetAvailableIDByRestaurantID(r.Context(), req.RestaurantID)
 		if err != nil {
-			log.Info("failed to get available items", sl.Err(err))
-			w.WriteHeader(http.StatusInternalServerError)
-			render.JSON(w, r, response.Error("failed to get available items"))
+			response.Error(log, w, r, "failed to get available items", "failed to find available items", http.StatusInternalServerError)
 			return
 		}
 		for _, item := range req.Items {
 			if !slices.Contains(availableItems, item.MenuitemID) {
-				log.Info(fmt.Sprintf("item %v is not available", item.MenuitemID))
-				w.WriteHeader(http.StatusBadRequest)
-				render.JSON(w, r, response.Error(fmt.Sprintf("item %v is not available", item.MenuitemID)))
+				response.Error(log, w, r,
+					fmt.Sprintf("item %v is not available", item.MenuitemID),
+					fmt.Sprintf("item %v is not available", item.MenuitemID),
+					http.StatusBadRequest)
 				return
 			}
 		}
 		address := req.Address
 		if address == "" {
 			if !userInfo.Address.Valid {
-				log.Info("No user address")
-				w.WriteHeader(http.StatusBadRequest)
-				render.JSON(w, r, response.Error("no user address"))
+				response.Error(log, w, r, "no user address", "No address", http.StatusBadRequest)
 				return
 			}
 			address = userInfo.Address.String
@@ -119,9 +124,7 @@ func New(
 			Address:      address,
 		})
 		if err != nil {
-			log.Info("failed to create order", sl.Err(err))
-			w.WriteHeader(http.StatusInternalServerError)
-			render.JSON(w, r, response.Error("failed to create order"))
+			response.Error(log, w, r, "something went wrong", "failed to create order", http.StatusInternalServerError)
 			return
 		}
 		orderIDs := make([]int32, len(req.Items))
@@ -138,19 +141,17 @@ func New(
 			Column3: quantity,
 		})
 		if err != nil {
-			log.Info("failed to add items", sl.Err(err))
-			w.WriteHeader(http.StatusInternalServerError)
-			render.JSON(w, r, response.Error("failed to add items"))
+			response.Error(log, w, r, "something went wrong", "failed to add items", http.StatusInternalServerError)
 			return
 		}
 		log.Info("successfully added items")
-		w.WriteHeader(http.StatusCreated)
+
+		render.Status(r, http.StatusCreated)
 		render.JSON(w, r, Response{
-			response.OK(),
 			order.ID,
 			req.RestaurantID,
 			order.Status,
-			order.CreatedAt.Time.Format(time.RFC850),
+			order.CreatedAt.Time.Format(time.RFC3339),
 			order.Address,
 			req.Items,
 		})

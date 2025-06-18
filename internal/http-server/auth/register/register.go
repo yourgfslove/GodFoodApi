@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	_ "database/sql"
-	"errors"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
 	"github.com/go-playground/validator/v10"
@@ -21,21 +20,20 @@ import (
 )
 
 type Request struct {
-	Email    string `json:"email" validate:"required,email"`
-	Password string `json:"password" validate:"required"`
-	Role     string `json:"role" validate:"required,oneof=courier restaurant customer"`
-	Phone    string `json:"phone"`
-	Address  string `json:"address,omitempty"`
-	Name     string `json:"name"`
+	Email    string `json:"email" validate:"required,email" example:"user@example.com"`
+	Password string `json:"password" validate:"required" example:"password123"`
+	Role     string `json:"role" validate:"required,oneof=courier restaurant customer" example:"customer"`
+	Phone    string `json:"phone" example:"89035433434"`
+	Address  string `json:"address,omitempty" example:"123 street 1"`
+	Name     string `json:"name" example:"Bill"`
 }
 
 type Response struct {
-	response.Response
-	Email        string `json:"email"`
-	RefreshToken string `json:"refresh_token"`
-	JWT          string `json:"jwt"`
-	Address      string `json:"address,omitempty"`
-	Name         string `json:"name"`
+	Email        string `json:"email" example:"user@example.com"`
+	RefreshToken string `json:"refresh_token" example:"7027102e5ddecf9dfaa1fa602851f7e77a212c486a37f014a5c016d3f3a2cdce"`
+	JWT          string `json:"jwt" example:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJHb2RGb29kIiwic3ViIjoiMTUiLCJleHAiOjE3NTAwOTE3MDIsImlhdCI6MTc1MDA4ODEwMn0.NUKzisW-QLalMwaADr5dwb9VnfYb3W-pivD5f4hVZ5A"`
+	Address      string `json:"address,omitempty" example:"123 street 1"`
+	Name         string `json:"name" example:"Bill"`
 }
 
 type UserSaver interface {
@@ -46,42 +44,52 @@ type RefreshTokenSaver interface {
 	CreateToken(ctx context.Context, arg database.CreateTokenParams) (database.CreateTokenRow, error)
 }
 
+// RegisterUser godoc
+// @Summary Регистрация
+// @Description Создает нового пользователя с ролью(courier, restaurant, customer), email, телефоном и паролем. Возвращает JWT и refresh-token
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param request body register.Request true "Данные для Регистрации"
+// @Success 200 {object} register.Response "Пользователь успешно зарегистрирован"
+// @Failure 400 {object} response.Response "Некорректные данные"
+// @Failure 500 {object} response.Response "Серверная Ошибка"
+// @Router /register [post]
 func New(log *slog.Logger, saver UserSaver, tokenSaver RefreshTokenSaver, tokenSecret string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "http.auth.register.new"
 		log = log.With(
 			slog.String("op", op),
 			slog.String("request_id", middleware.GetReqID(r.Context())))
-		var req Request
 
+		var req Request
 		err := render.DecodeJSON(r.Body, &req)
 		if err != nil {
-			log.Error("failed to decode request", sl.Err(err))
-			w.WriteHeader(http.StatusInternalServerError)
-			render.JSON(w, r, response.Error("failed to decode JSON"))
+			response.Error(log, w, r, "failed to decode request", "Failed to decode JSON", http.StatusInternalServerError)
 			return
 		}
 		log.Info("request body decoded", slog.Any("request", req))
 
 		if err := validator.New().Struct(req); err != nil {
-			log.Error("failed to validate request", sl.Err(err))
-			w.WriteHeader(http.StatusBadRequest)
-			render.JSON(w, r, response.ValidationError(err.(validator.ValidationErrors)))
+			if validationErrors, ok := err.(validator.ValidationErrors); ok {
+				response.ValidationError(log, w, r, validationErrors)
+			} else {
+				response.Error(log, w, r, "failed to validate", "failed to validate JSON", http.StatusBadRequest)
+			}
 			return
 		}
+
 		if !phoneValidation.IsValidRuPhoneNumber(req.Phone) {
-			log.Error("invalid phone", sl.Err(errors.New("invalid phone")))
-			w.WriteHeader(http.StatusBadRequest)
-			render.JSON(w, r, response.Error("failed to validate phone"))
+			response.Error(log, w, r, "failed to validate phone", "invalid phone", http.StatusBadRequest)
 			return
 		}
+
 		hashedPassword, err := hashPassword.HashPassword(req.Password)
 		if err != nil {
-			log.Error("failed to hash password", sl.Err(err))
-			w.WriteHeader(http.StatusInternalServerError)
-			render.JSON(w, r, response.Error("failed to set password"))
+			response.Error(log, w, r, "failed to set password", "failed to hash password", http.StatusInternalServerError)
 			return
 		}
+
 		savedUser, err := saver.CreateUser(r.Context(), database.CreateUserParams{
 			Email:        req.Email,
 			HashPassword: hashedPassword,
@@ -96,36 +104,30 @@ func New(log *slog.Logger, saver UserSaver, tokenSaver RefreshTokenSaver, tokenS
 			},
 		})
 		if err != nil {
-			log.Error("failed to create user", sl.Err(err))
-			w.WriteHeader(http.StatusInternalServerError)
-			render.JSON(w, r, response.Error("failed to create user"))
+			response.Error(log, w, r, "failed to create user", "failed to create user", http.StatusInternalServerError)
 			return
 		}
+
 		newRefreshToken, err := refreshToken.MakeRefreshToken()
 		if err != nil {
-			log.Error("failed to make refresh token", sl.Err(err))
-			w.WriteHeader(http.StatusInternalServerError)
-			render.JSON(w, r, response.Error("something went wrong"))
+			response.Error(log, w, r, "something went wrong", sl.Err(err).String(), http.StatusInternalServerError)
 			return
 		}
 		savedToken, err := tokenSaver.CreateToken(r.Context(), database.CreateTokenParams{
 			UserID: savedUser.ID,
 			Token:  newRefreshToken})
 		if err != nil {
-			log.Error("failed to save token", sl.Err(err))
-			w.WriteHeader(http.StatusInternalServerError)
-			render.JSON(w, r, response.Error("something went wrong"))
+			response.Error(log, w, r, "something went wrong", sl.Err(err).String(), http.StatusInternalServerError)
 			return
 		}
 		newJWT, err := JWT.MakeJWT(savedUser.ID, tokenSecret, time.Hour)
 		if err != nil {
-			log.Error("failed to make JWT", sl.Err(err))
-			w.WriteHeader(http.StatusInternalServerError)
-			render.JSON(w, r, response.Error("something went wrong"))
+			response.Error(log, w, r, "something went wrong", sl.Err(err).String(), http.StatusInternalServerError)
 			return
 		}
+
+		render.Status(r, http.StatusCreated)
 		render.JSON(w, r, Response{
-			Response:     response.OK(),
 			Email:        savedUser.Email,
 			RefreshToken: savedToken.Token,
 			JWT:          newJWT,

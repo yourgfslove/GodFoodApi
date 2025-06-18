@@ -2,34 +2,19 @@ package response
 
 import (
 	"fmt"
+	"github.com/go-chi/render"
 	"github.com/go-playground/validator/v10"
+	"log/slog"
+	"net/http"
 	"strings"
 )
 
 type Response struct {
-	Status string `json:"status"`
-	Error  string `json:"error,omitempty"`
+	Error string `json:"error,omitempty" example:"error message"`
 }
 
-const (
-	StatusOK    = "OK"
-	StatusError = "ERROR"
-)
-
-func OK() Response {
-	return Response{
-		Status: StatusOK,
-	}
-}
-
-func Error(msg string) Response {
-	return Response{
-		Status: StatusError,
-		Error:  msg,
-	}
-}
-
-func ValidationError(errs validator.ValidationErrors) Response {
+func ValidationError(log *slog.Logger, w http.ResponseWriter, r *http.Request, errs validator.ValidationErrors) {
+	log.Info("Validation Error")
 	var errList []string
 	for _, err := range errs {
 		switch err.ActualTag() {
@@ -43,11 +28,19 @@ func ValidationError(errs validator.ValidationErrors) Response {
 			errList = append(errList, fmt.Sprintf("%s is not a valid role", err.Field()))
 		default:
 			errList = append(errList, fmt.Sprintf("%s is not a valid field", err.Field()))
-
 		}
 	}
-	return Response{
-		Status: StatusError,
-		Error:  strings.Join(errList, "; "),
-	}
+
+	render.Status(r, http.StatusBadRequest)
+	render.JSON(w, r, Response{
+		Error: strings.Join(errList, "; "),
+	})
+}
+
+func Error(log *slog.Logger, w http.ResponseWriter, r *http.Request, msg string, logMsg string, statusCode int) {
+	log.Info(logMsg)
+	render.Status(r, statusCode)
+	render.JSON(w, r, Response{
+		Error: msg,
+	})
 }

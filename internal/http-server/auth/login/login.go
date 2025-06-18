@@ -10,22 +10,20 @@ import (
 	"github.com/yourgfslove/GodFoodApi/internal/lib/auth/JWT"
 	"github.com/yourgfslove/GodFoodApi/internal/lib/auth/hashPassword"
 	"github.com/yourgfslove/GodFoodApi/internal/lib/auth/refreshToken"
-	"github.com/yourgfslove/GodFoodApi/internal/lib/logger/sl"
 	"log/slog"
 	"net/http"
 	"time"
 )
 
 type loginRequest struct {
-	Email    string `json:"email" validate:"required,email"`
-	Password string `json:"password"`
+	Email    string `json:"email" validate:"required,email" example:"user@example.com"`
+	Password string `json:"password" example:"password123"`
 }
 
 type loginResponse struct {
-	response.Response
-	Jwt          string `json:"jwt"`
-	RefreshToken string `json:"refresh_token"`
-	Email        string `json:"email"`
+	Jwt          string `json:"jwt" example:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJHb2RGb29kIiwic3ViIjoiMTUiLCJleHAiOjE3NTAwOTE3MDIsImlhdCI6MTc1MDA4ODEwMn0.NUKzisW-QLalMwaADr5dwb9VnfYb3W-pivD5f4hVZ5A"`
+	RefreshToken string `json:"refresh_token" exmaple:"7027102e5ddecf9dfaa1fa602851f7e77a212c486a37f014a5c016d3f3a2cdce"`
+	Email        string `json:"email" example:"user@example.com"`
 }
 
 type RefreshTokenSaverGetter interface {
@@ -37,6 +35,18 @@ type UserGetter interface {
 	GetUserByEmail(ctx context.Context, email string) (database.User, error)
 }
 
+// Login godoc
+// @Summary Авторизация
+// @Description Принимает email и пароль, возвращает JWT и refresh-token
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param loginRequest body login.loginRequest true "Данные для входа"
+// @Success 200 {object} login.loginResponse
+// @Failure 400 {object} response.Response
+// @Fastringilure 401 {object} response.Response
+// @Failure 500 {object} response.Response
+// @Router /login [post]
 func New(log *slog.Logger, saver RefreshTokenSaverGetter, userGetter UserGetter, tokenSecret string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "http-server.auth.login"
@@ -45,36 +55,38 @@ func New(log *slog.Logger, saver RefreshTokenSaverGetter, userGetter UserGetter,
 			slog.String("request_id", middleware.GetReqID(r.Context())))
 		var req loginRequest
 		if err := render.DecodeJSON(r.Body, &req); err != nil {
-			log.Error("failed to decode body", sl.Err(err))
-			w.WriteHeader(http.StatusBadRequest)
-			render.JSON(w, r, response.Error("failed to decode JSON"))
+			response.Error(log, w, r, "something went wrong", "failed to decode JSON", http.StatusInternalServerError)
 			return
 		}
 		log.Info("JSON body decoded")
 		if err := validator.New().Struct(req); err != nil {
-			log.Error("failed to validate email", sl.Err(err))
-			w.WriteHeader(http.StatusBadRequest)
-			render.JSON(w, r, response.Error("failed to validate email"))
+			if validationErrors, ok := err.(validator.ValidationErrors); ok {
+				response.ValidationError(log, w, r, validationErrors)
+			} else {
+				response.Error(log, w, r, "failed to validate", "failed to validate JSON", http.StatusBadRequest)
+			}
+			return
+		}
+
+		if req.Email == "" || req.Password == "" {
+			response.Error(log, w, r, "empty request", "No email or pass", http.StatusBadRequest)
 			return
 		}
 		user, err := userGetter.GetUserByEmail(r.Context(), req.Email)
+
 		if err != nil {
-			log.Error("failed to get user by email", sl.Err(err))
-			w.WriteHeader(http.StatusInternalServerError)
-			render.JSON(w, r, response.Error("no user on email"))
+			response.Error(log, w, r, "wrong email", "no User on email", http.StatusUnauthorized)
 			return
 		}
+
 		if err := hashPassword.VerifyPassword(req.Password, user.HashPassword); err != nil {
-			log.Error("failed to verify password", sl.Err(err))
-			w.WriteHeader(http.StatusUnauthorized)
-			render.JSON(w, r, response.Error("wrong password"))
+			response.Error(log, w, r, "wrong password", "failed to verify pass", http.StatusUnauthorized)
 			return
 		}
+
 		refreshTokens, err := saver.GetTokensByUser(r.Context(), user.ID)
 		if err != nil {
-			log.Error("failed to get tokens by user", sl.Err(err))
-			w.WriteHeader(http.StatusInternalServerError)
-			render.JSON(w, r, response.Error("failed to get tokens by user"))
+			response.Error(log, w, r, "something went wrong", "failed to get tokens by user", http.StatusInternalServerError)
 			return
 		}
 		var userRefreshToken string
@@ -84,12 +96,11 @@ func New(log *slog.Logger, saver RefreshTokenSaverGetter, userGetter UserGetter,
 				break
 			}
 		}
+
 		if userRefreshToken == "" {
 			userRefreshToken, err = refreshToken.MakeRefreshToken()
 			if err != nil {
-				log.Error("failed to make refresh token", sl.Err(err))
-				w.WriteHeader(http.StatusInternalServerError)
-				render.JSON(w, r, response.Error("something went wrong"))
+				response.Error(log, w, r, "something went wrong", "failed to make new RefreshToken", http.StatusInternalServerError)
 				return
 			}
 			_, err = saver.CreateToken(r.Context(), database.CreateTokenParams{
@@ -97,22 +108,20 @@ func New(log *slog.Logger, saver RefreshTokenSaverGetter, userGetter UserGetter,
 				UserID: user.ID,
 			})
 			if err != nil {
-				log.Error("failed to save refresh token", sl.Err(err))
-				w.WriteHeader(http.StatusInternalServerError)
-				render.JSON(w, r, response.Error("something went wrong"))
+				response.Error(log, w, r, "something went wrong", "failed to save refresh token", http.StatusInternalServerError)
 				return
 			}
 			log.Info("refresh token saved")
 		}
+
 		jwt, err := JWT.MakeJWT(user.ID, tokenSecret, time.Hour)
 		if err != nil {
-			log.Error("failed to make jwt", sl.Err(err))
-			w.WriteHeader(http.StatusInternalServerError)
-			render.JSON(w, r, response.Error("something went wrong"))
+			response.Error(log, w, r, "something went wrong", "failed to make jwt", http.StatusInternalServerError)
 			return
 		}
+
+		render.Status(r, http.StatusOK)
 		render.JSON(w, r, loginResponse{
-			Response:     response.OK(),
 			Jwt:          jwt,
 			RefreshToken: userRefreshToken,
 			Email:        user.Email})

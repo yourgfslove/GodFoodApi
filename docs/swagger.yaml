@@ -1,0 +1,904 @@
+definitions:
+  GetRestaurants.Response:
+    properties:
+      restaurants:
+        items:
+          $ref: '#/definitions/GetRestaurants.Restaurant'
+        type: array
+    type: object
+  GetRestaurants.Restaurant:
+    properties:
+      address:
+        example: 123 street 1
+        type: string
+      name:
+        example: Mac
+        type: string
+      phone:
+        example: "89055463333"
+        type: string
+      restaurant_id:
+        example: 1
+        type: integer
+    type: object
+  getCurrentOrder.Response:
+    properties:
+      created_at:
+        example: 2020-01-01 01:02:03 UTC
+        type: string
+      delivery_Address:
+        example: 122 address
+        type: string
+      items:
+        items:
+          $ref: '#/definitions/getCurrentOrder.item'
+        type: array
+      restaurant_Address:
+        example: 123 address
+        type: string
+      restaurant_Name:
+        example: Mac
+        type: string
+      restaurant_Phone:
+        example: "89056663333"
+        type: string
+      reward:
+        example: 12
+        type: number
+      status:
+        example: pending
+        type: string
+    type: object
+  getCurrentOrder.item:
+    properties:
+      item_name:
+        example: Burger with cheese
+        type: string
+      quantity:
+        example: 3
+        type: integer
+    type: object
+  getMenu.Item:
+    properties:
+      available:
+        type: boolean
+      description:
+        example: burger with cheese
+        type: string
+      name:
+        example: Cheeseburger
+        type: string
+      price:
+        example: 122
+        type: number
+    type: object
+  getMenu.Response:
+    properties:
+      menu:
+        items:
+          $ref: '#/definitions/getMenu.Item'
+        type: array
+      restaurant_id:
+        example: 1
+        type: integer
+    type: object
+  getOrderByID.Response:
+    properties:
+      courierName:
+        example: John
+        type: string
+      created_at:
+        example: "2020-09-20T14:14:15+09:00"
+        type: string
+      delivery_Address:
+        example: 1222 address
+        type: string
+      items:
+        items:
+          $ref: '#/definitions/getOrderByID.item'
+        type: array
+      restaurant_Address:
+        example: 123 address
+        type: string
+      restaurant_Name:
+        example: Mac
+        type: string
+      restaurant_Phone:
+        example: "89055463333"
+        type: string
+      status:
+        example: pending
+        type: string
+      total_price:
+        example: 300
+        type: number
+      user_name:
+        example: Bill
+        type: string
+    type: object
+  getOrderByID.item:
+    properties:
+      item_name:
+        example: burger
+        type: string
+      price:
+        example: 60
+        type: number
+      quantity:
+        example: 5
+        type: integer
+    type: object
+  getOrdersForUser.Response:
+    properties:
+      ordersStruct:
+        items:
+          $ref: '#/definitions/ordersStruct.Order'
+        type: array
+    type: object
+  getPendingOrders.Response:
+    properties:
+      pending_orders:
+        items:
+          $ref: '#/definitions/ordersStruct.OrderForCourier'
+        type: array
+    type: object
+  getRestaurantByID.Response:
+    properties:
+      menu_items:
+        items:
+          $ref: '#/definitions/getRestaurantByID.item'
+        type: array
+      restaurant_address:
+        example: 112 address
+        type: string
+      restaurant_id:
+        example: 14
+        type: integer
+      restaurant_name:
+        example: mac
+        type: string
+      restaurant_phone:
+        example: "89053435656"
+        type: string
+    type: object
+  getRestaurantByID.item:
+    properties:
+      item_description:
+        example: burger with cheese
+        type: string
+      item_id:
+        example: 1
+        type: integer
+      item_name:
+        example: cheeseburger
+        type: string
+      item_price:
+        example: 122
+        type: number
+    type: object
+  login.loginRequest:
+    properties:
+      email:
+        example: user@example.com
+        type: string
+      password:
+        example: password123
+        type: string
+    required:
+    - email
+    type: object
+  login.loginResponse:
+    properties:
+      email:
+        example: user@example.com
+        type: string
+      jwt:
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJHb2RGb29kIiwic3ViIjoiMTUiLCJleHAiOjE3NTAwOTE3MDIsImlhdCI6MTc1MDA4ODEwMn0.NUKzisW-QLalMwaADr5dwb9VnfYb3W-pivD5f4hVZ5A
+        type: string
+      refresh_token:
+        type: string
+    type: object
+  newMenuItem.Request:
+    properties:
+      available:
+        type: boolean
+      description:
+        example: burger with beef
+        type: string
+      name:
+        example: Burger
+        type: string
+      price:
+        example: 52.2
+        type: number
+    type: object
+  newMenuItem.Response:
+    properties:
+      available:
+        type: boolean
+      description:
+        example: burger with beef
+        type: string
+      id:
+        example: 1
+        type: integer
+      name:
+        example: Burger
+        type: string
+      price:
+        example: 52.2
+        type: number
+      restaurant_id:
+        example: 1
+        type: integer
+    type: object
+  orderAssign.Response:
+    properties:
+      courierName:
+        example: Bill
+        type: string
+      created_at:
+        example: "2020-01-01T00:00:00+09:00"
+        type: string
+      delivery_Address:
+        example: 1222 address
+        type: string
+      items:
+        items:
+          $ref: '#/definitions/orderAssign.item'
+        type: array
+      restaurant_Address:
+        example: 123 address
+        type: string
+      restaurant_Name:
+        example: Mac
+        type: string
+      restaurant_Phone:
+        example: "89056666666"
+        type: string
+      status:
+        example: pending
+        type: string
+      total_price:
+        example: 300
+        type: number
+      user_name:
+        example: Ivan
+        type: string
+    type: object
+  orderAssign.item:
+    properties:
+      item_name:
+        example: Burger with cheese
+        type: string
+      price:
+        example: 100
+        type: number
+      quantity:
+        example: 3
+        type: integer
+    type: object
+  orderDelivered.Response:
+    properties:
+      order_id:
+        type: integer
+    type: object
+  ordersStruct.Item:
+    properties:
+      item_name:
+        example: Burger with cheese
+        type: string
+      item_price:
+        example: 100
+        type: number
+      menu_item_id:
+        example: 1
+        type: integer
+      quantity:
+        example: 3
+        type: integer
+    type: object
+  ordersStruct.Order:
+    properties:
+      created_at:
+        example: "2013-08-20T18:08:41+00:00"
+        type: string
+      delivery_Address:
+        example: 1223 address
+        type: string
+      items:
+        items:
+          $ref: '#/definitions/ordersStruct.Item'
+        type: array
+      restaurant_Address:
+        example: 123 address
+        type: string
+      restaurant_Name:
+        example: Mac
+        type: string
+      restaurant_Phone:
+        example: "89056666666"
+        type: string
+      status:
+        example: pending
+        type: string
+      total_price:
+        example: 300
+        type: number
+      user_name:
+        example: Ivan
+        type: string
+    type: object
+  ordersStruct.OrderForCourier:
+    properties:
+      created_at:
+        example: "2013-08-20T18:08:41+00:00"
+        type: string
+      delivery_Address:
+        example: 1223 address
+        type: string
+      items:
+        items:
+          $ref: '#/definitions/ordersStruct.Item'
+        type: array
+      order_id:
+        example: 1
+        type: integer
+      restaurant_Address:
+        example: 123 address
+        type: string
+      restaurant_Name:
+        example: Mac
+        type: string
+      restaurant_Phone:
+        example: "89056666666"
+        type: string
+      reward:
+        example: 30
+        type: number
+      user_phone:
+        example: Ivan
+        type: string
+    type: object
+  placeorder.Request:
+    properties:
+      address:
+        example: 123 address
+        type: string
+      items:
+        items:
+          properties:
+            menuitem_id:
+              example: 6
+              type: integer
+            quantity:
+              example: 5
+              type: integer
+          type: object
+        type: array
+      restaurant_id:
+        example: 14
+        type: integer
+    type: object
+  placeorder.Response:
+    properties:
+      created_at:
+        example: Tue, 17 Jun 2025 00:25:16 +0000
+        type: string
+      items:
+        items:
+          properties:
+            menuitem_id:
+              example: 6
+              type: integer
+            quantity:
+              example: 5
+              type: integer
+          type: object
+        type: array
+      order_id:
+        example: 12
+        type: integer
+      restaurant_id:
+        example: 14
+        type: integer
+      status:
+        example: pending
+        type: string
+      user_address:
+        example: 123 address
+        type: string
+    type: object
+  register.Request:
+    properties:
+      address:
+        example: 123 street 1
+        type: string
+      email:
+        example: user@example.com
+        type: string
+      name:
+        example: Bill
+        type: string
+      password:
+        example: password123
+        type: string
+      phone:
+        example: "89035433434"
+        type: string
+      role:
+        enum:
+        - courier
+        - restaurant
+        - customer
+        example: customer
+        type: string
+    required:
+    - email
+    - password
+    - role
+    type: object
+  register.Response:
+    properties:
+      address:
+        example: 123 street 1
+        type: string
+      email:
+        example: user@example.com
+        type: string
+      jwt:
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJHb2RGb29kIiwic3ViIjoiMTUiLCJleHAiOjE3NTAwOTE3MDIsImlhdCI6MTc1MDA4ODEwMn0.NUKzisW-QLalMwaADr5dwb9VnfYb3W-pivD5f4hVZ5A
+        type: string
+      name:
+        example: Bill
+        type: string
+      refresh_token:
+        example: 7027102e5ddecf9dfaa1fa602851f7e77a212c486a37f014a5c016d3f3a2cdce
+        type: string
+    type: object
+  response.Response:
+    properties:
+      error:
+        example: error message
+        type: string
+    type: object
+info:
+  contact: {}
+  description: REST API for food delivery
+  title: GodFood API
+  version: "1.0"
+paths:
+  /login:
+    post:
+      consumes:
+      - application/json
+      description: Принимает email и пароль, возвращает JWT и refresh-token
+      parameters:
+      - description: Данные для входа
+        in: body
+        name: loginRequest
+        required: true
+        schema:
+          $ref: '#/definitions/login.loginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/login.loginResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Авторизация
+      tags:
+      - auth
+  /orders:
+    get:
+      consumes:
+      - application/json
+      description: Возвращает полную информацию по заказам для авторизованного пользователя
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Заказ успешно получен
+          schema:
+            $ref: '#/definitions/getOrdersForUser.Response'
+        "204":
+          description: Нет заказов
+        "400":
+          description: Неккоректные данные
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: Не авторизован
+          schema:
+            $ref: '#/definitions/response.Response'
+        "403":
+          description: Доступ Запрещен
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Ошибка сервера
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Получение заказов по JWT
+      tags:
+      - Orders
+    post:
+      consumes:
+      - application/json
+      description: Создает новый заказ
+      parameters:
+      - description: Данные для добавления
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/placeorder.Request'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'Новый заказ успешно создан '
+          schema:
+            $ref: '#/definitions/placeorder.Response'
+        "400":
+          description: Некорректные данные
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: Неавторизован
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Серверная Ошибка
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Создание нового заказа авторизованным пользователем
+      tags:
+      - Orders
+  /orders/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Возвращает полную информацию по заказу(если авторизованный пользователь
+        им владеет)
+      parameters:
+      - description: ID Заказа
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Заказ успешно получен
+          schema:
+            $ref: '#/definitions/getOrderByID.Response'
+        "400":
+          description: Неккоректные данные
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: Не авторизован
+          schema:
+            $ref: '#/definitions/response.Response'
+        "403":
+          description: Доступ Запрещен
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Ошибка сервера
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Получение заказа по айди
+      tags:
+      - Orders
+  /orders/{id}/assign:
+    patch:
+      consumes:
+      - application/json
+      description: Назначает заказ на курьера
+      parameters:
+      - description: ID Заказа
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Заказ назначен
+          schema:
+            $ref: '#/definitions/orderAssign.Response'
+        "400":
+          description: Некорректные данные
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: Неавторизован
+          schema:
+            $ref: '#/definitions/response.Response'
+        "404":
+          description: Заказ не найден
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Серверная Ошибка
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Взятие заказа курьером
+      tags:
+      - Orders
+  /orders/current:
+    get:
+      consumes:
+      - application/json
+      description: Возвращает полную информацию по заказу, который везет авторизованный
+        курьер
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Заказ успешно получен
+          schema:
+            $ref: '#/definitions/getCurrentOrder.Response'
+        "403":
+          description: Неавторизован
+          schema:
+            $ref: '#/definitions/response.Response'
+        "404":
+          description: Заказ не найден
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Ошибка сервера
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Получение нынешнего заказа курьера
+      tags:
+      - Orders
+  /orders/delivered:
+    patch:
+      consumes:
+      - application/json
+      description: Изменяет статус доставляемого заказа
+      parameters:
+      - description: ID Заказа
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Заказ доставлен
+          schema:
+            $ref: '#/definitions/orderDelivered.Response'
+        "400":
+          description: Некорректные данные
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: Неавторизован
+          schema:
+            $ref: '#/definitions/response.Response'
+        "403":
+          description: Доступ запрещен
+          schema:
+            $ref: '#/definitions/response.Response'
+        "404":
+          description: Заказ не найден
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Серверная Ошибка
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Изменение статуса заказа
+      tags:
+      - Orders
+  /orders/pending:
+    get:
+      consumes:
+      - application/json
+      description: Возвращает все заказы, которые еще не взяты
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Заказы успешно получен
+          schema:
+            $ref: '#/definitions/getPendingOrders.Response'
+        "400":
+          description: Некорректные данные
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: Неавторизован
+          schema:
+            $ref: '#/definitions/response.Response'
+        "404":
+          description: Заказы не найдены
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Ошибка сервера
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Получение всех доступных для доставки заказов
+      tags:
+      - Orders
+  /register:
+    post:
+      consumes:
+      - application/json
+      description: Создает нового пользователя с ролью(courier, restaurant, customer),
+        email, телефоном и паролем. Возвращает JWT и refresh-token
+      parameters:
+      - description: Данные для Регистрации
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/register.Request'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Пользователь успешно зарегистрирован
+          schema:
+            $ref: '#/definitions/register.Response'
+        "400":
+          description: Некорректные данные
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Серверная Ошибка
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Регистрация
+      tags:
+      - auth
+  /restaurants:
+    get:
+      consumes:
+      - application/json
+      description: Возвращает полную информацию по всем ресторанам(Айди, имя, адрес,
+        телефон)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Рестораны успешно получены
+          schema:
+            $ref: '#/definitions/GetRestaurants.Response'
+        "500":
+          description: Ошибка сервера
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Получение всех Ресторанов
+      tags:
+      - Restaurants
+  /restaurants/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Возвращает полную информацию по ресторану(Айди, имя, адрес, телефон)
+        и меню по айди
+      parameters:
+      - description: ID ресторана
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Ресторан успешно получен
+          schema:
+            $ref: '#/definitions/getRestaurantByID.Response'
+        "400":
+          description: Некорректные данные
+          schema:
+            $ref: '#/definitions/response.Response'
+        "404":
+          description: Ресторан не найден
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Получение Ресторана по айди
+      tags:
+      - Restaurants
+  /restaurants/{id}/menuItems:
+    get:
+      consumes:
+      - application/json
+      description: Возвращает меню ресторана по айди
+      parameters:
+      - description: ID ресторана
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Меню успешно получено
+          schema:
+            $ref: '#/definitions/getMenu.Response'
+        "400":
+          description: Некорректные данные
+          schema:
+            $ref: '#/definitions/response.Response'
+        "404":
+          description: Ресторан не найден
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Получение меню по айди
+      tags:
+      - Restaurants
+  /restaurants/menuItems:
+    post:
+      consumes:
+      - application/json
+      description: Создает новую позицию в меню рессторана по JWT
+      parameters:
+      - description: Данные для добавления
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/newMenuItem.Request'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Новая позиция успешно добавлена
+          schema:
+            $ref: '#/definitions/newMenuItem.Response'
+        "400":
+          description: Некорректные данные
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Серверная Ошибка
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Добавление новой позиции в меню
+      tags:
+      - Restaurants
+securityDefinitions:
+  BearerAuth:
+    description: 'Введите токен в формате: Bearer {token}'
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

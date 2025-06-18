@@ -1,0 +1,1333 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "REST API for food delivery",
+        "title": "GodFood API",
+        "contact": {},
+        "version": "1.0"
+    },
+    "paths": {
+        "/login": {
+            "post": {
+                "description": "Принимает email и пароль, возвращает JWT и refresh-token",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Авторизация",
+                "parameters": [
+                    {
+                        "description": "Данные для входа",
+                        "name": "loginRequest",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/login.loginRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/login.loginResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/orders": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Возвращает полную информацию по заказам для авторизованного пользователя",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Orders"
+                ],
+                "summary": "Получение заказов по JWT",
+                "responses": {
+                    "200": {
+                        "description": "Заказ успешно получен",
+                        "schema": {
+                            "$ref": "#/definitions/getOrdersForUser.Response"
+                        }
+                    },
+                    "204": {
+                        "description": "Нет заказов"
+                    },
+                    "400": {
+                        "description": "Неккоректные данные",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Не авторизован",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "403": {
+                        "description": "Доступ Запрещен",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Создает новый заказ",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Orders"
+                ],
+                "summary": "Создание нового заказа авторизованным пользователем",
+                "parameters": [
+                    {
+                        "description": "Данные для добавления",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/placeorder.Request"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Новый заказ успешно создан ",
+                        "schema": {
+                            "$ref": "#/definitions/placeorder.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Некорректные данные",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Неавторизован",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Серверная Ошибка",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/orders/current": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Возвращает полную информацию по заказу, который везет авторизованный курьер",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Orders"
+                ],
+                "summary": "Получение нынешнего заказа курьера",
+                "responses": {
+                    "200": {
+                        "description": "Заказ успешно получен",
+                        "schema": {
+                            "$ref": "#/definitions/getCurrentOrder.Response"
+                        }
+                    },
+                    "403": {
+                        "description": "Неавторизован",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Заказ не найден",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/orders/delivered": {
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Изменяет статус доставляемого заказа",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Orders"
+                ],
+                "summary": "Изменение статуса заказа",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID Заказа",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Заказ доставлен",
+                        "schema": {
+                            "$ref": "#/definitions/orderDelivered.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Некорректные данные",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Неавторизован",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "403": {
+                        "description": "Доступ запрещен",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Заказ не найден",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Серверная Ошибка",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/orders/pending": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Возвращает все заказы, которые еще не взяты",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Orders"
+                ],
+                "summary": "Получение всех доступных для доставки заказов",
+                "responses": {
+                    "200": {
+                        "description": "Заказы успешно получен",
+                        "schema": {
+                            "$ref": "#/definitions/getPendingOrders.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Некорректные данные",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Неавторизован",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Заказы не найдены",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/orders/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Возвращает полную информацию по заказу(если авторизованный пользователь им владеет)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Orders"
+                ],
+                "summary": "Получение заказа по айди",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID Заказа",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Заказ успешно получен",
+                        "schema": {
+                            "$ref": "#/definitions/getOrderByID.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Неккоректные данные",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Не авторизован",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "403": {
+                        "description": "Доступ Запрещен",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/orders/{id}/assign": {
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Назначает заказ на курьера",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Orders"
+                ],
+                "summary": "Взятие заказа курьером",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID Заказа",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Заказ назначен",
+                        "schema": {
+                            "$ref": "#/definitions/orderAssign.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Некорректные данные",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Неавторизован",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Заказ не найден",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Серверная Ошибка",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/register": {
+            "post": {
+                "description": "Создает нового пользователя с ролью(courier, restaurant, customer), email, телефоном и паролем. Возвращает JWT и refresh-token",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Регистрация",
+                "parameters": [
+                    {
+                        "description": "Данные для Регистрации",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/register.Request"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Пользователь успешно зарегистрирован",
+                        "schema": {
+                            "$ref": "#/definitions/register.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Некорректные данные",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Серверная Ошибка",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/restaurants": {
+            "get": {
+                "description": "Возвращает полную информацию по всем ресторанам(Айди, имя, адрес, телефон)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Restaurants"
+                ],
+                "summary": "Получение всех Ресторанов",
+                "responses": {
+                    "200": {
+                        "description": "Рестораны успешно получены",
+                        "schema": {
+                            "$ref": "#/definitions/GetRestaurants.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/restaurants/menuItems": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Создает новую позицию в меню рессторана по JWT",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Restaurants"
+                ],
+                "summary": "Добавление новой позиции в меню",
+                "parameters": [
+                    {
+                        "description": "Данные для добавления",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/newMenuItem.Request"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Новая позиция успешно добавлена",
+                        "schema": {
+                            "$ref": "#/definitions/newMenuItem.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Некорректные данные",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Серверная Ошибка",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/restaurants/{id}": {
+            "get": {
+                "description": "Возвращает полную информацию по ресторану(Айди, имя, адрес, телефон) и меню по айди",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Restaurants"
+                ],
+                "summary": "Получение Ресторана по айди",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID ресторана",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Ресторан успешно получен",
+                        "schema": {
+                            "$ref": "#/definitions/getRestaurantByID.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Некорректные данные",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Ресторан не найден",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/restaurants/{id}/menuItems": {
+            "get": {
+                "description": "Возвращает меню ресторана по айди",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Restaurants"
+                ],
+                "summary": "Получение меню по айди",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID ресторана",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Меню успешно получено",
+                        "schema": {
+                            "$ref": "#/definitions/getMenu.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Некорректные данные",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Ресторан не найден",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "GetRestaurants.Response": {
+            "type": "object",
+            "properties": {
+                "restaurants": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/GetRestaurants.Restaurant"
+                    }
+                }
+            }
+        },
+        "GetRestaurants.Restaurant": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "type": "string",
+                    "example": "123 street 1"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Mac"
+                },
+                "phone": {
+                    "type": "string",
+                    "example": "89055463333"
+                },
+                "restaurant_id": {
+                    "type": "integer",
+                    "example": 1
+                }
+            }
+        },
+        "getCurrentOrder.Response": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string",
+                    "example": "2020-01-01 01:02:03 UTC"
+                },
+                "delivery_Address": {
+                    "type": "string",
+                    "example": "122 address"
+                },
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/getCurrentOrder.item"
+                    }
+                },
+                "restaurant_Address": {
+                    "type": "string",
+                    "example": "123 address"
+                },
+                "restaurant_Name": {
+                    "type": "string",
+                    "example": "Mac"
+                },
+                "restaurant_Phone": {
+                    "type": "string",
+                    "example": "89056663333"
+                },
+                "reward": {
+                    "type": "number",
+                    "example": 12
+                },
+                "status": {
+                    "type": "string",
+                    "example": "pending"
+                }
+            }
+        },
+        "getCurrentOrder.item": {
+            "type": "object",
+            "properties": {
+                "item_name": {
+                    "type": "string",
+                    "example": "Burger with cheese"
+                },
+                "quantity": {
+                    "type": "integer",
+                    "example": 3
+                }
+            }
+        },
+        "getMenu.Item": {
+            "type": "object",
+            "properties": {
+                "available": {
+                    "type": "boolean"
+                },
+                "description": {
+                    "type": "string",
+                    "example": "burger with cheese"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Cheeseburger"
+                },
+                "price": {
+                    "type": "number",
+                    "example": 122
+                }
+            }
+        },
+        "getMenu.Response": {
+            "type": "object",
+            "properties": {
+                "menu": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/getMenu.Item"
+                    }
+                },
+                "restaurant_id": {
+                    "type": "integer",
+                    "example": 1
+                }
+            }
+        },
+        "getOrderByID.Response": {
+            "type": "object",
+            "properties": {
+                "courierName": {
+                    "type": "string",
+                    "example": "John"
+                },
+                "created_at": {
+                    "type": "string",
+                    "example": "2020-09-20T14:14:15+09:00"
+                },
+                "delivery_Address": {
+                    "type": "string",
+                    "example": "1222 address"
+                },
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/getOrderByID.item"
+                    }
+                },
+                "restaurant_Address": {
+                    "type": "string",
+                    "example": "123 address"
+                },
+                "restaurant_Name": {
+                    "type": "string",
+                    "example": "Mac"
+                },
+                "restaurant_Phone": {
+                    "type": "string",
+                    "example": "89055463333"
+                },
+                "status": {
+                    "type": "string",
+                    "example": "pending"
+                },
+                "total_price": {
+                    "type": "number",
+                    "example": 300
+                },
+                "user_name": {
+                    "type": "string",
+                    "example": "Bill"
+                }
+            }
+        },
+        "getOrderByID.item": {
+            "type": "object",
+            "properties": {
+                "item_name": {
+                    "type": "string",
+                    "example": "burger"
+                },
+                "price": {
+                    "type": "number",
+                    "example": 60
+                },
+                "quantity": {
+                    "type": "integer",
+                    "example": 5
+                }
+            }
+        },
+        "getOrdersForUser.Response": {
+            "type": "object",
+            "properties": {
+                "ordersStruct": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ordersStruct.Order"
+                    }
+                }
+            }
+        },
+        "getPendingOrders.Response": {
+            "type": "object",
+            "properties": {
+                "pending_orders": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ordersStruct.OrderForCourier"
+                    }
+                }
+            }
+        },
+        "getRestaurantByID.Response": {
+            "type": "object",
+            "properties": {
+                "menu_items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/getRestaurantByID.item"
+                    }
+                },
+                "restaurant_address": {
+                    "type": "string",
+                    "example": "112 address"
+                },
+                "restaurant_id": {
+                    "type": "integer",
+                    "example": 14
+                },
+                "restaurant_name": {
+                    "type": "string",
+                    "example": "mac"
+                },
+                "restaurant_phone": {
+                    "type": "string",
+                    "example": "89053435656"
+                }
+            }
+        },
+        "getRestaurantByID.item": {
+            "type": "object",
+            "properties": {
+                "item_description": {
+                    "type": "string",
+                    "example": "burger with cheese"
+                },
+                "item_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "item_name": {
+                    "type": "string",
+                    "example": "cheeseburger"
+                },
+                "item_price": {
+                    "type": "number",
+                    "example": 122
+                }
+            }
+        },
+        "login.loginRequest": {
+            "type": "object",
+            "required": [
+                "email"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string",
+                    "example": "user@example.com"
+                },
+                "password": {
+                    "type": "string",
+                    "example": "password123"
+                }
+            }
+        },
+        "login.loginResponse": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string",
+                    "example": "user@example.com"
+                },
+                "jwt": {
+                    "type": "string",
+                    "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJHb2RGb29kIiwic3ViIjoiMTUiLCJleHAiOjE3NTAwOTE3MDIsImlhdCI6MTc1MDA4ODEwMn0.NUKzisW-QLalMwaADr5dwb9VnfYb3W-pivD5f4hVZ5A"
+                },
+                "refresh_token": {
+                    "type": "string"
+                }
+            }
+        },
+        "newMenuItem.Request": {
+            "type": "object",
+            "properties": {
+                "available": {
+                    "type": "boolean"
+                },
+                "description": {
+                    "type": "string",
+                    "example": "burger with beef"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Burger"
+                },
+                "price": {
+                    "type": "number",
+                    "example": 52.2
+                }
+            }
+        },
+        "newMenuItem.Response": {
+            "type": "object",
+            "properties": {
+                "available": {
+                    "type": "boolean"
+                },
+                "description": {
+                    "type": "string",
+                    "example": "burger with beef"
+                },
+                "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Burger"
+                },
+                "price": {
+                    "type": "number",
+                    "example": 52.2
+                },
+                "restaurant_id": {
+                    "type": "integer",
+                    "example": 1
+                }
+            }
+        },
+        "orderAssign.Response": {
+            "type": "object",
+            "properties": {
+                "courierName": {
+                    "type": "string",
+                    "example": "Bill"
+                },
+                "created_at": {
+                    "type": "string",
+                    "example": "2020-01-01T00:00:00+09:00"
+                },
+                "delivery_Address": {
+                    "type": "string",
+                    "example": "1222 address"
+                },
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/orderAssign.item"
+                    }
+                },
+                "restaurant_Address": {
+                    "type": "string",
+                    "example": "123 address"
+                },
+                "restaurant_Name": {
+                    "type": "string",
+                    "example": "Mac"
+                },
+                "restaurant_Phone": {
+                    "type": "string",
+                    "example": "89056666666"
+                },
+                "status": {
+                    "type": "string",
+                    "example": "pending"
+                },
+                "total_price": {
+                    "type": "number",
+                    "example": 300
+                },
+                "user_name": {
+                    "type": "string",
+                    "example": "Ivan"
+                }
+            }
+        },
+        "orderAssign.item": {
+            "type": "object",
+            "properties": {
+                "item_name": {
+                    "type": "string",
+                    "example": "Burger with cheese"
+                },
+                "price": {
+                    "type": "number",
+                    "example": 100
+                },
+                "quantity": {
+                    "type": "integer",
+                    "example": 3
+                }
+            }
+        },
+        "orderDelivered.Response": {
+            "type": "object",
+            "properties": {
+                "order_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "ordersStruct.Item": {
+            "type": "object",
+            "properties": {
+                "item_name": {
+                    "type": "string",
+                    "example": "Burger with cheese"
+                },
+                "item_price": {
+                    "type": "number",
+                    "example": 100
+                },
+                "menu_item_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "quantity": {
+                    "type": "integer",
+                    "example": 3
+                }
+            }
+        },
+        "ordersStruct.Order": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string",
+                    "example": "2013-08-20T18:08:41+00:00"
+                },
+                "delivery_Address": {
+                    "type": "string",
+                    "example": "1223 address"
+                },
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ordersStruct.Item"
+                    }
+                },
+                "restaurant_Address": {
+                    "type": "string",
+                    "example": "123 address"
+                },
+                "restaurant_Name": {
+                    "type": "string",
+                    "example": "Mac"
+                },
+                "restaurant_Phone": {
+                    "type": "string",
+                    "example": "89056666666"
+                },
+                "status": {
+                    "type": "string",
+                    "example": "pending"
+                },
+                "total_price": {
+                    "type": "number",
+                    "example": 300
+                },
+                "user_name": {
+                    "type": "string",
+                    "example": "Ivan"
+                }
+            }
+        },
+        "ordersStruct.OrderForCourier": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string",
+                    "example": "2013-08-20T18:08:41+00:00"
+                },
+                "delivery_Address": {
+                    "type": "string",
+                    "example": "1223 address"
+                },
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ordersStruct.Item"
+                    }
+                },
+                "order_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "restaurant_Address": {
+                    "type": "string",
+                    "example": "123 address"
+                },
+                "restaurant_Name": {
+                    "type": "string",
+                    "example": "Mac"
+                },
+                "restaurant_Phone": {
+                    "type": "string",
+                    "example": "89056666666"
+                },
+                "reward": {
+                    "type": "number",
+                    "example": 30
+                },
+                "user_phone": {
+                    "type": "string",
+                    "example": "Ivan"
+                }
+            }
+        },
+        "placeorder.Request": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "type": "string",
+                    "example": "123 address"
+                },
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "menuitem_id": {
+                                "type": "integer",
+                                "example": 6
+                            },
+                            "quantity": {
+                                "type": "integer",
+                                "example": 5
+                            }
+                        }
+                    }
+                },
+                "restaurant_id": {
+                    "type": "integer",
+                    "example": 14
+                }
+            }
+        },
+        "placeorder.Response": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string",
+                    "example": "Tue, 17 Jun 2025 00:25:16 +0000"
+                },
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "menuitem_id": {
+                                "type": "integer",
+                                "example": 6
+                            },
+                            "quantity": {
+                                "type": "integer",
+                                "example": 5
+                            }
+                        }
+                    }
+                },
+                "order_id": {
+                    "type": "integer",
+                    "example": 12
+                },
+                "restaurant_id": {
+                    "type": "integer",
+                    "example": 14
+                },
+                "status": {
+                    "type": "string",
+                    "example": "pending"
+                },
+                "user_address": {
+                    "type": "string",
+                    "example": "123 address"
+                }
+            }
+        },
+        "register.Request": {
+            "type": "object",
+            "required": [
+                "email",
+                "password",
+                "role"
+            ],
+            "properties": {
+                "address": {
+                    "type": "string",
+                    "example": "123 street 1"
+                },
+                "email": {
+                    "type": "string",
+                    "example": "user@example.com"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Bill"
+                },
+                "password": {
+                    "type": "string",
+                    "example": "password123"
+                },
+                "phone": {
+                    "type": "string",
+                    "example": "89035433434"
+                },
+                "role": {
+                    "type": "string",
+                    "enum": [
+                        "courier",
+                        "restaurant",
+                        "customer"
+                    ],
+                    "example": "customer"
+                }
+            }
+        },
+        "register.Response": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "type": "string",
+                    "example": "123 street 1"
+                },
+                "email": {
+                    "type": "string",
+                    "example": "user@example.com"
+                },
+                "jwt": {
+                    "type": "string",
+                    "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJHb2RGb29kIiwic3ViIjoiMTUiLCJleHAiOjE3NTAwOTE3MDIsImlhdCI6MTc1MDA4ODEwMn0.NUKzisW-QLalMwaADr5dwb9VnfYb3W-pivD5f4hVZ5A"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Bill"
+                },
+                "refresh_token": {
+                    "type": "string",
+                    "example": "7027102e5ddecf9dfaa1fa602851f7e77a212c486a37f014a5c016d3f3a2cdce"
+                }
+            }
+        },
+        "response.Response": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string",
+                    "example": "error message"
+                }
+            }
+        }
+    },
+    "securityDefinitions": {
+        "BearerAuth": {
+            "description": "Введите токен в формате: Bearer {token}",
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
+        }
+    }
+}

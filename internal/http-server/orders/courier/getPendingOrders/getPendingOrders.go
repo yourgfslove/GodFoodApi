@@ -20,13 +20,25 @@ type userGetter interface {
 }
 
 type Response struct {
-	response.Response
 	PendingOrders []ordersStruct.OrderForCourier `json:"pending_orders"`
 }
 
+// Orders godoc
+// @Summary Получение всех доступных для доставки заказов
+// @Description Возвращает все заказы, которые еще не взяты
+// @Tags Orders
+// @Accept json
+// @Produce json
+// @Success 200 {object} getPendingOrders.Response "Заказы успешно получен"
+// @Failure 400 {object} response.Response "Некорректные данные"
+// @Failure 401 {object} response.Response "Неавторизован"
+// @Failure 404 {object} response.Response "Заказы не найдены"
+// @Failure 500 {object} response.Response "Ошибка сервера"
+// @Router /orders/pending [get]
+// @Security BearerAuth
 func New(log *slog.Logger, ordersGetter ordersGetter, userGetter userGetter) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "http-server.orders.getPendingOrders"
+		const op = "http-server.orders.courier.getPendingOrders"
 		log = log.With(
 			slog.String("op", op),
 			slog.String("request_id", middleware.GetReqID(r.Context())))
@@ -35,29 +47,24 @@ func New(log *slog.Logger, ordersGetter ordersGetter, userGetter userGetter) htt
 
 		userInfo, err := userGetter.GetUserByID(r.Context(), userID)
 		if err != nil {
-			log.Info("failed to get the user")
-			w.WriteHeader(http.StatusInternalServerError)
-			render.JSON(w, r, response.Error("failed to get the user"))
+			response.Error(log, w, r, "failed to get user", "No user", http.StatusInternalServerError)
 			return
 		}
 
 		if userInfo.UserRole != "courier" {
-			log.Info("access denied")
-			w.WriteHeader(http.StatusForbidden)
-			render.JSON(w, r, response.Error("access denied"))
+			response.Error(log, w, r, "access denied", "Wrong role", http.StatusForbidden)
 			return
 		}
 
 		orders, err := ordersGetter.GetFullPendingOrders(r.Context())
 		if err != nil {
-			log.Info("failed to get the pending orders")
-			w.WriteHeader(http.StatusInternalServerError)
-			render.JSON(w, r, response.Error("failed to get the pending orders"))
+			response.Error(log, w, r, "failed to get pending orders", "no pending orders", http.StatusInternalServerError)
 			return
 		}
+
 		respOrders := ordersStruct.MakePendingOrders(orders)
+		render.Status(r, http.StatusOK)
 		render.JSON(w, r, Response{
-			response.OK(),
 			respOrders,
 		})
 	}

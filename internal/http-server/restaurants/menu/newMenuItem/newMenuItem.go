@@ -3,6 +3,7 @@ package newMenuItem
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
 	"github.com/yourgfslove/GodFoodApi/internal/database"
@@ -13,19 +14,18 @@ import (
 )
 
 type Request struct {
-	Price       float64 `json:"price"`
-	Name        string  `json:"name"`
-	Description string  `json:"description,omitempty"`
+	Price       float64 `json:"price" example:"52.2"`
+	Name        string  `json:"name" example:"Burger"`
+	Description string  `json:"description,omitempty" example:"burger with beef"`
 	Available   bool    `json:"available"`
 }
 
 type Response struct {
-	response.Response
-	ID           int32   `json:"id"`
-	RestaurantID int32   `json:"restaurant_id"`
-	Name         string  `json:"name"`
-	Price        float64 `json:"price"`
-	Description  string  `json:"description,omitempty"`
+	ID           int32   `json:"id" example:"1"`
+	RestaurantID int32   `json:"restaurant_id" example:"1"`
+	Name         string  `json:"name" example:"Burger"`
+	Price        float64 `json:"price" example:"52.2"`
+	Description  string  `json:"description,omitempty" example:"burger with beef"`
 	Available    bool    `json:"available"`
 }
 
@@ -36,6 +36,18 @@ type userGetter interface {
 	GetUserByID(ctx context.Context, id int32) (database.User, error)
 }
 
+// Retaurants godoc
+// @Summary Добавление новой позиции в меню
+// @Description Создает новую позицию в меню рессторана по JWT
+// @Tags Restaurants
+// @Accept json
+// @Produce json
+// @Param request body newMenuItem.Request true "Данные для добавления"
+// @Success 200 {object} newMenuItem.Response "Новая позиция успешно добавлена"
+// @Failure 400 {object} response.Response "Некорректные данные"
+// @Failure 500 {object} response.Response "Серверная Ошибка"
+// @Router /restaurants/menuItems [post]
+// @Security BearerAuth
 func New(log *slog.Logger, creater menuItemCreater, userGetter userGetter) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "http.restaurants.newMenuItem"
@@ -52,24 +64,21 @@ func New(log *slog.Logger, creater menuItemCreater, userGetter userGetter) http.
 
 		var req Request
 		if err := render.DecodeJSON(r.Body, &req); err != nil {
-			log.Info("failed to decode JSON", sl.Err(err))
-			w.WriteHeader(http.StatusBadRequest)
-			render.JSON(w, r, response.Error("failed to decode JSON"))
+			response.Error(log, w, r,
+				"Something went wrong",
+				"failed to decode JSON",
+				http.StatusInternalServerError)
 			return
 		}
 
 		userRest, err := userGetter.GetUserByID(r.Context(), userID)
 		if err != nil {
-			log.Info("wrong ID")
-			w.WriteHeader(http.StatusBadRequest)
-			render.JSON(w, r, response.Error("wrong ID"))
+			response.Error(log, w, r, "Wrong JWT", "No users for following ID", http.StatusUnauthorized)
 			return
 		}
 
 		if userRest.UserRole != "restaurant" {
-			log.Info("wrong role")
-			w.WriteHeader(http.StatusBadRequest)
-			render.JSON(w, r, response.Error("wrong role"))
+			response.Error(log, w, r, "access denied", "Wrong role", http.StatusForbidden)
 			return
 		}
 
@@ -80,15 +89,17 @@ func New(log *slog.Logger, creater menuItemCreater, userGetter userGetter) http.
 			Description:  sql.NullString{String: req.Description, Valid: req.Description != ""},
 			Available:    sql.NullBool{Bool: req.Available, Valid: true},
 		})
+
 		if err != nil {
-			log.Info("failed to create menu item", sl.Err(err))
-			w.WriteHeader(http.StatusBadRequest)
-			render.JSON(w, r, response.Error("failed to create menu item"))
+			response.Error(log, w, r,
+				"failed to create",
+				fmt.Sprintf("failed to create menu item: %v", sl.Err(err)),
+				http.StatusInternalServerError)
 			return
 		}
 
+		render.Status(r, http.StatusCreated)
 		render.JSON(w, r, Response{
-			Response:     response.OK(),
 			ID:           newItem.ID,
 			RestaurantID: newItem.RestaurantID,
 			Name:         newItem.Name,

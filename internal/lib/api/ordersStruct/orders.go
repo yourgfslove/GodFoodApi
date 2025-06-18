@@ -6,33 +6,34 @@ import (
 )
 
 type Order struct {
-	RestaurantName    string  `json:"restaurant_Name"`
-	RestaurantAddress string  `json:"restaurant_Address"`
-	RestaurantPhone   string  `json:"restaurant_Phone"`
-	DeliveryAddress   string  `json:"delivery_Address"`
-	UserName          string  `json:"user_name"`
-	Status            string  `json:"status"`
-	TotalPrice        float64 `json:"total_price"`
-	CreatedAt         string  `json:"created_at"`
+	RestaurantName    string  `json:"restaurant_Name" example:"Mac"`
+	RestaurantAddress string  `json:"restaurant_Address" example:"123 address"`
+	RestaurantPhone   string  `json:"restaurant_Phone" example:"89056666666"`
+	DeliveryAddress   string  `json:"delivery_Address" example:"1223 address"`
+	UserName          string  `json:"user_name" example:"Ivan"`
+	Status            string  `json:"status" example:"pending"`
+	TotalPrice        float64 `json:"total_price" example:"300.0"`
+	CreatedAt         string  `json:"created_at" example:"2013-08-20T18:08:41+00:00"`
 	Items             []Item  `json:"items"`
 }
 
 type OrderForCourier struct {
-	RestaurantName    string  `json:"restaurant_Name"`
-	RestaurantAddress string  `json:"restaurant_Address"`
-	RestaurantPhone   string  `json:"restaurant_Phone"`
-	DeliveryAddress   string  `json:"delivery_Address"`
-	UserPhone         string  `json:"user_phone"`
-	Reward            float64 `json:"reward"`
-	CreatedAt         string  `json:"created_at"`
+	OrderID           int32   `json:"order_id" example:"1"`
+	RestaurantName    string  `json:"restaurant_Name" example:"Mac"`
+	RestaurantAddress string  `json:"restaurant_Address" example:"123 address"`
+	RestaurantPhone   string  `json:"restaurant_Phone" example:"89056666666"`
+	DeliveryAddress   string  `json:"delivery_Address" example:"1223 address"`
+	UserPhone         string  `json:"user_phone" example:"Ivan"`
+	Reward            float64 `json:"reward" example:"30.0"`
+	CreatedAt         string  `json:"created_at" example:"2013-08-20T18:08:41+00:00"`
 	Items             []Item  `json:"items"`
 }
 
 type Item struct {
-	MenuItemID int32   `json:"menu_item_id"`
-	ItemName   string  `json:"item_name"`
-	ItemPrice  float64 `json:"item_price"`
-	Quantity   int32   `json:"quantity"`
+	MenuItemID int32   `json:"menu_item_id" example:"1"`
+	ItemName   string  `json:"item_name" example:"Burger with cheese"`
+	ItemPrice  float64 `json:"item_price" example:"100.0"`
+	Quantity   int32   `json:"quantity" example:"3"`
 }
 
 func MakeOrders(rows []database.GetFullOrdersByUserIDRow) []Order {
@@ -74,6 +75,7 @@ func MakePendingOrders(rows []database.GetFullPendingOrdersRow) []OrderForCourie
 		order, exists := ordersMap[row.OrderID]
 		if !exists {
 			order = &OrderForCourier{
+				OrderID:           row.OrderID,
 				RestaurantName:    row.RestaurantName.String,
 				RestaurantAddress: row.RestaurantAddress.String,
 				RestaurantPhone:   row.RestaurantPhone,

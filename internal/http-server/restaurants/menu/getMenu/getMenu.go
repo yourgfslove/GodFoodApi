@@ -17,50 +17,53 @@ type menuGetter interface {
 }
 
 type Response struct {
-	RestaurantID int32  `json:"restaurant_id"`
+	RestaurantID int32  `json:"restaurant_id" example:"1"`
 	Menu         []Item `json:"menu"`
 }
 
 type Item struct {
-	Name        string  `json:"name"`
-	Price       float64 `json:"price"`
-	Description string  `json:"description"`
+	Name        string  `json:"name" example:"Cheeseburger"`
+	Price       float64 `json:"price" example:"122.00"`
+	Description string  `json:"description" example:"burger with cheese"`
 	Available   bool    `json:"available"`
 }
 
+// Restaurants godoc
+// @Summary Получение меню по айди
+// @Description Возвращает меню ресторана по айди
+// @Tags Restaurants
+// @Accept json
+// @Produce json
+// @Param id path int true "ID ресторана"
+// @Success 200 {object} getMenu.Response "Меню успешно получено"
+// @Failure 400 {object} response.Response "Некорректные данные"
+// @Failure 404 {object} response.Response "Ресторан не найден"
+// @Router /restaurants/{id}/menuItems [get]
 func New(log *slog.Logger, getter menuGetter) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "http.restaurants.getMenu"
 		log = log.With(slog.String("op", op),
 			slog.String("request_id", middleware.GetReqID(r.Context())))
+
 		restaurantID := chi.URLParam(r, "id")
 		if restaurantID == "" {
-			log.Info("missing restaurant_id")
-			w.WriteHeader(http.StatusBadRequest)
-			render.JSON(w, r, response.Error("missing restaurant_id"))
+			response.Error(log, w, r, "No ID in URL", "empty id in URL", http.StatusBadRequest)
 			return
 		}
+
 		IntRestaurantID, err := strconv.ParseInt(restaurantID, 10, 32)
 		if err != nil {
-			log.Info("invalid restaurant_id")
-			w.WriteHeader(http.StatusBadRequest)
-			render.JSON(w, r, response.Error("restaurant_id is not a number"))
+			response.Error(log, w, r, "Invalid ID", "can not parse ID", http.StatusBadRequest)
 			return
 		}
 		log.Info("restaurant_id is parsed")
+
 		menu, err := getter.GetMenu(r.Context(), int32(IntRestaurantID))
 		if err != nil {
-			log.Info("wrong ID")
-			w.WriteHeader(http.StatusBadRequest)
-			render.JSON(w, r, response.Error("No restaurant found"))
+			response.Error(log, w, r, "Not Found", "no menu found", http.StatusNotFound)
 			return
 		}
-		if menu == nil {
-			log.Info("restaurant not found")
-			w.WriteHeader(http.StatusNotFound)
-			render.JSON(w, r, response.Error("restaurant not found"))
-			return
-		}
+
 		resMenu := make([]Item, 0, len(menu))
 		for _, i := range menu {
 			resMenu = append(resMenu, Item{
@@ -70,6 +73,8 @@ func New(log *slog.Logger, getter menuGetter) http.HandlerFunc {
 				Available:   i.Available.Bool,
 			})
 		}
+
+		render.Status(r, http.StatusOK)
 		render.JSON(w, r, Response{
 			RestaurantID: int32(IntRestaurantID),
 			Menu:         resMenu,
