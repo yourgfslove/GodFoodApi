@@ -52,6 +52,7 @@ func main() {
 		WriteTimeout: cfg.Timeout,
 		IdleTimeout:  cfg.IdleTimeout,
 	}
+
 	if err := srv.ListenAndServe(); err != nil {
 		log.Error("failed start server", sl.Err(err))
 	}
