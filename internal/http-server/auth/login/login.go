@@ -15,12 +15,12 @@ import (
 	"time"
 )
 
-type loginRequest struct {
+type Request struct {
 	Email    string `json:"email" validate:"required,email" example:"user@example.com"`
 	Password string `json:"password" example:"password123"`
 }
 
-type loginResponse struct {
+type Response struct {
 	Jwt          string `json:"jwt" example:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJHb2RGb29kIiwic3ViIjoiMTUiLCJleHAiOjE3NTAwOTE3MDIsImlhdCI6MTc1MDA4ODEwMn0.NUKzisW-QLalMwaADr5dwb9VnfYb3W-pivD5f4hVZ5A"`
 	RefreshToken string `json:"refresh_token" exmaple:"7027102e5ddecf9dfaa1fa602851f7e77a212c486a37f014a5c016d3f3a2cdce"`
 	Email        string `json:"email" example:"user@example.com"`
@@ -53,7 +53,7 @@ func New(log *slog.Logger, saver RefreshTokenSaverGetter, userGetter UserGetter,
 		log = log.With(
 			slog.String("op", op),
 			slog.String("request_id", middleware.GetReqID(r.Context())))
-		var req loginRequest
+		var req Request
 		if err := render.DecodeJSON(r.Body, &req); err != nil {
 			response.Error(log, w, r, "something went wrong", "failed to decode JSON", http.StatusInternalServerError)
 			return
@@ -121,7 +121,7 @@ func New(log *slog.Logger, saver RefreshTokenSaverGetter, userGetter UserGetter,
 		}
 
 		render.Status(r, http.StatusOK)
-		render.JSON(w, r, loginResponse{
+		render.JSON(w, r, Response{
 			Jwt:          jwt,
 			RefreshToken: userRefreshToken,
 			Email:        user.Email})

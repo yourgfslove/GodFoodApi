@@ -78,6 +78,7 @@ REST API для сервиса доставки еды, написанный н�
 env: "local"
 storage_url: "postgrelink"
 secretJWT: "JWTsecret"
+migrations_path: "migrations_path"
 http_server:
   address: "addres:port"
   timeout: 4s

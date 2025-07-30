@@ -8,10 +8,11 @@ import (
 )
 
 type Config struct {
-	Env        string `yaml:"env" env:"ENV" env-default:"local"`
-	StorageURL string `yaml:"storage_url" env:"STORAGE_URL" env-required:"true"`
-	SecretJWT  string `yaml:"secret_jwt" env:"SECRET_JWT"`
-	HTTPServer `yaml:"http_server" env:"HTTP_SERVER" env-required:"true"`
+	Env           string `yaml:"env" env:"ENV" env-default:"local"`
+	StorageURL    string `yaml:"storage_url" env:"STORAGE_URL" env-required:"true"`
+	SecretJWT     string `yaml:"secret_jwt" env:"SECRET_JWT"`
+	MigrationPath string `yaml:"migrations_path" env:"MIGRATIONS_PATH" env-required:"true"`
+	HTTPServer    `yaml:"http_server" env:"HTTP_SERVER" env-required:"true"`
 }
 type HTTPServer struct {
 	Address     string        `yaml:"address" env-default:"localhost:8081"`

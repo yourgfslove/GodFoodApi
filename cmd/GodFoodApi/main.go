@@ -10,6 +10,7 @@ import (
 	"github.com/yourgfslove/GodFoodApi/internal/database"
 	myrouter "github.com/yourgfslove/GodFoodApi/internal/http-server/router"
 	"github.com/yourgfslove/GodFoodApi/internal/lib/logger/sl"
+	"github.com/yourgfslove/GodFoodApi/internal/migrator"
 	"log/slog"
 	"net/http"
 	"os"
@@ -26,6 +27,7 @@ func main() {
 	fmt.Println("Starting server...")
 	cfg := config.MustLoadConfig()
 	log := setupLogger(cfg.Env)
+	migrator.MustMigrate(cfg.StorageURL, cfg.MigrationPath)
 
 	log.Info("starting server")
 	log.Debug("Debug logging enabled")

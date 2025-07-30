@@ -9,9 +9,7 @@ import (
 	"testing"
 )
 
-const (
-	host = "localhost:8082"
-)
+const host = "8082"
 
 func Test_register(t *testing.T) {
 	testcases := []struct {
