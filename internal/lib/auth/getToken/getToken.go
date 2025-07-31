@@ -6,6 +6,7 @@ import (
 	"strings"
 )
 
+// Geting token from Authorization header with defferent prefixes
 func GetTokenFromHeader(headers http.Header, prefix string) (string, error) {
 	authHeader := headers.Get("Authorization")
 	if authHeader == "" {

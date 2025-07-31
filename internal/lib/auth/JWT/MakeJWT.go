@@ -1,11 +1,13 @@
 package JWT
 
 import (
-	"github.com/golang-jwt/jwt/v5"
 	"strconv"
 	"time"
+
+	"github.com/golang-jwt/jwt/v5"
 )
 
+// Making new JWT with registered claims and userID in subject
 func MakeJWT(userID int32, tokenSecret string, expiresIN time.Duration) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.RegisteredClaims{
 		ExpiresAt: jwt.NewNumericDate(time.Now().Add(expiresIN)),

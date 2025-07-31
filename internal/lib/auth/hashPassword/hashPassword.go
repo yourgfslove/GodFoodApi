@@ -2,13 +2,15 @@ package hashPassword
 
 import (
 	"errors"
+
 	"golang.org/x/crypto/bcrypt"
 )
 
 const MaxLengthToCrypt = 72
 
+// Hashing Password with bcrypt
 func HashPassword(password string) (string, error) {
-	if len([]byte(password)) > MaxLengthToCrypt || len([]byte(password)) < 0 {
+	if len([]byte(password)) > MaxLengthToCrypt || len([]byte(password)) < 1 {
 		return "", errors.New("wrong password length")
 	}
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)

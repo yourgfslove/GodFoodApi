@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 )
 
+// Making a new refresh token
 func MakeRefreshToken() (string, error) {
 	key := make([]byte, 32)
 	_, err := rand.Read(key)
