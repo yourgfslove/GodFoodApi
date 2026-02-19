@@ -1,0 +1,5 @@
+.git 
+./config/local.yaml
+.idea
+README.md
+sqlc.yaml

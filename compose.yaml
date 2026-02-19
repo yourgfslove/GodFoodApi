@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  god_food_api:
+    depends_on:
+      - psqldb
+    build:
+      context: .
+    container_name: godfood
+    hostname: godfood-server
+    volumes: 
+      - ./config/:/root/config
+    environment:
+      CONFIG_PATH: "/root/config/local.yaml"
+    networks:
+        - mynet
+    ports: 
+        - 8888:8888
+    deploy:
+      restart_policy:
+        condition: on-failure
+  psqldb:
+    image: postgres:16
+    ports: 
+      - 5432:5432
+    environment:
+        POSTGRES_USER: exmp
+        POSTGRES_PASSWORD: pass
+        POSTGRES_DB: godfooddb
+    volumes:
+      - pgdata:/var/lib/postgresql/data 
+    networks:
+      - mynet
+networks:
+  mynet:
+    driver: bridge
+volumes:
+  pgdata:
+
+
